@@ -9,7 +9,7 @@ import "time"
 // 		// An operation that may fail
 // 	}
 //
-// 	err := Retry(operation, NewExponentialBackoff())
+// 	err := backoff.Retry(operation, backoff.NewExponentialBackoff())
 // 	if err != nil {
 // 		// handle error
 // 	}

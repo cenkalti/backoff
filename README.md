@@ -12,13 +12,13 @@ is an algorithm that uses feedback to multiplicatively decrease the rate of some
 in order to gradually find an acceptable rate.
 The retries exponentially increase and stop increasing when a certain threshold is met.
 
-Simple example:
+Simple retry helper that uses exponential back-off algorithm:
 
     operation := func() error {
         // An operation that migth fail
     }
 
-    err := backoff.Retry(operation, NewExponentialBackoff())
+    err := backoff.Retry(operation, backoff.NewExponentialBackoff())
     if err != nil {
         // handle error
     }
