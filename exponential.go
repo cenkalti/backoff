@@ -105,8 +105,8 @@ func (b *ExponentialBackoff) NextBackOff() time.Duration {
 	return randomizedInterval
 }
 
-// GetElapsedTime returns the elapsed time in milliseconds since an
-// ExponentialBackOff instance is created and is reset when Reset() is called.
+// GetElapsedTime returns the elapsed time since an ExponentialBackOff instance
+// is created and is reset when Reset() is called.
 //
 // The elapsed time is computed using time.Now().UnixNano().
 func (b *ExponentialBackoff) GetElapsedTime() time.Duration {
