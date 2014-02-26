@@ -1,3 +1,6 @@
+// Package backoff implements backoff algorithms for retrying operations.
+//
+// Also has a Retry() helper for retrying operations that may fail.
 package backoff
 
 import "time"

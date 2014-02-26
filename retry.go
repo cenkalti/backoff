@@ -2,8 +2,19 @@ package backoff
 
 import "time"
 
-// Retry takes a function and a BackOff implementation and retries the function
-// until it does not return error or BackOff stops.
+// Retry the function f until it does not return error or BackOff stops.
+//
+// Example:
+// 	operation := func() error {
+// 		// An operation that may fail
+// 	}
+//
+// 	err := Retry(operation, NewExponentialBackoff())
+// 	if err != nil {
+// 		// handle error
+// 	}
+//
+// 	// operation is successfull
 func Retry(f func() error, b BackOff) error {
 	err := f()
 	if err == nil {
