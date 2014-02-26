@@ -14,13 +14,15 @@ The retries exponentially increase and stop increasing when a certain threshold 
 
 Simple retry helper that uses exponential back-off algorithm:
 
-    operation := func() error {
-        // An operation that migth fail
-    }
+```go
+operation := func() error {
+    // An operation that migth fail
+}
 
-    err := backoff.Retry(operation, backoff.NewExponentialBackoff())
-    if err != nil {
-        // handle error
-    }
+err := backoff.Retry(operation, backoff.NewExponentialBackoff())
+if err != nil {
+    // handle error
+}
 
-    // operation is successfull
+// operation is successfull
+```
