@@ -1,15 +1,19 @@
 package backoff
 
-import "testing"
+import (
+	"time"
+
+	"testing"
+)
 
 func TestNextBackOffMillis(t *testing.T) {
-	subtestNextBackOffMillis(t, 0, new(ZeroBackOff))
-	subtestNextBackOffMillis(t, Stop, new(StopBackOff))
+	subtestNextBackOff(t, 0, new(ZeroBackOff))
+	subtestNextBackOff(t, Stop, new(StopBackOff))
 }
 
-func subtestNextBackOffMillis(t *testing.T, expectedValue int64, backOffPolicy BackOff) {
+func subtestNextBackOff(t *testing.T, expectedValue time.Duration, backOffPolicy BackOff) {
 	for i := 0; i < 10; i++ {
-		next := backOffPolicy.NextBackOffMillis()
+		next := backOffPolicy.NextBackOff()
 		if next != expectedValue {
 			t.Errorf("got: %d expected: %d", next, expectedValue)
 		}

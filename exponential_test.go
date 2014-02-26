@@ -3,30 +3,37 @@ package backoff
 import (
 	"math"
 	"testing"
+	"time"
 )
 
 func TestBackOff(t *testing.T) {
-	var testInitialInterval int64 = 500
-	var testRandomizationFactor float64 = 0.1
-	var testMultiplier float64 = 2.0
-	var testMaxInterval int64 = 5000
-	var testMaxElapsedTime int64 = 900000
+	var (
+		testInitialInterval     = 500 * time.Millisecond
+		testRandomizationFactor = 0.1
+		testMultiplier          = 2.0
+		testMaxInterval         = 5 * time.Second
+		testMaxElapsedTime      = 15 * time.Minute
+	)
 
-	var exp = NewExponentialBackoff()
-	exp.InitialIntervalMillis = testInitialInterval
+	exp := NewExponentialBackoff()
+	exp.InitialInterval = testInitialInterval
 	exp.RandomizationFactor = testRandomizationFactor
 	exp.Multiplier = testMultiplier
-	exp.MaxIntervalMillis = testMaxInterval
-	exp.MaxElapsedTimeMillis = testMaxElapsedTime
+	exp.MaxInterval = testMaxInterval
+	exp.MaxElapsedTime = testMaxElapsedTime
 	exp.Reset()
 
-	var expectedResults = []int64{500, 1000, 2000, 4000, 5000, 5000, 5000, 5000, 5000, 5000}
+	var expectedResults = []time.Duration{500, 1000, 2000, 4000, 5000, 5000, 5000, 5000, 5000, 5000}
+	for i, d := range expectedResults {
+		expectedResults[i] = d * time.Millisecond
+	}
+
 	for _, expected := range expectedResults {
-		assertEquals(t, expected, exp.currentIntervalMillis)
+		assertEquals(t, expected, exp.currentInterval)
 		// Assert that the next back off falls in the expected range.
-		var minInterval int64 = expected - int64(testRandomizationFactor*float64(expected))
-		var maxInterval int64 = expected + int64(testRandomizationFactor*float64(expected))
-		var actualInterval int64 = exp.NextBackOffMillis()
+		var minInterval time.Duration = expected - time.Duration(testRandomizationFactor*float64(expected))
+		var maxInterval time.Duration = expected + time.Duration(testRandomizationFactor*float64(expected))
+		var actualInterval time.Duration = exp.NextBackOff()
 		if !(minInterval <= actualInterval && actualInterval <= maxInterval) {
 			t.Error("error")
 		}
@@ -45,56 +52,59 @@ func TestGetRandomizedInterval(t *testing.T) {
 	assertEquals(t, 3, getRandomValueFromInterval(0.5, 0.99, 2))
 }
 
-type MyNanoClock struct {
-	i            int64
-	startSeconds int64
+type TestClock struct {
+	i     time.Duration
+	start time.Time
 }
 
-func (c *MyNanoClock) NanoTime() int64 {
-	t := (c.startSeconds + c.i) * 1e9
-	c.i++
+func (c *TestClock) Now() time.Time {
+	t := c.start.Add(c.i)
+	c.i += time.Second
 	return t
 }
 
-func TestGetElapsedTimeMillis(t *testing.T) {
+func TestGetElapsedTime(t *testing.T) {
 	var exp = NewExponentialBackoff()
-	exp.NanoTimer = &MyNanoClock{}
+	exp.Clock = &TestClock{}
 	exp.Reset()
 
-	var elapsedTimeMillis int64 = exp.GetElapsedTimeMillis()
-	if elapsedTimeMillis != 1000 {
-		t.Errorf("elapsedTimeMillis=%d", elapsedTimeMillis)
+	var elapsedTime time.Duration = exp.GetElapsedTime()
+	if elapsedTime != time.Second {
+		t.Errorf("elapsedTime=%d", elapsedTime)
 	}
 }
 
 func TestMaxElapsedTime(t *testing.T) {
 	var exp = NewExponentialBackoff()
-	exp.NanoTimer = &MyNanoClock{startSeconds: 10000}
-	if exp.NextBackOffMillis() != Stop {
+	exp.Clock = &TestClock{start: time.Time{}.Add(10000 * time.Second)}
+	if exp.NextBackOff() != Stop {
 		t.Error("error2")
 	}
-	// Change the currentElapsedTimeMillis to be 0 ensuring that the elapsed time will be greater
+	// Change the currentElapsedTime to be 0 ensuring that the elapsed time will be greater
 	// than the max elapsed time.
-	exp.startTimeNanos = 0
-	assertEquals(t, Stop, exp.NextBackOffMillis())
+	exp.startTime = time.Time{}
+	assertEquals(t, Stop, exp.NextBackOff())
 }
 
 func TestBackOffOverflow(t *testing.T) {
-	var testInitialInterval int64 = math.MaxInt64 / 2
-	var testMultiplier float64 = 2.1
-	var testMaxInterval int64 = math.MaxInt64
-	var exp = NewExponentialBackoff()
-	exp.InitialIntervalMillis = testInitialInterval
+	var (
+		testInitialInterval time.Duration = math.MaxInt64 / 2
+		testMultiplier      float64       = 2.1
+		testMaxInterval     time.Duration = math.MaxInt64
+	)
+
+	exp := NewExponentialBackoff()
+	exp.InitialInterval = testInitialInterval
 	exp.Multiplier = testMultiplier
-	exp.MaxIntervalMillis = testMaxInterval
+	exp.MaxInterval = testMaxInterval
 	exp.Reset()
 
-	exp.NextBackOffMillis()
-	// Assert that when an overflow is possible the current varerval   int64    is set to the max varerval   int64   .
-	assertEquals(t, testMaxInterval, exp.currentIntervalMillis)
+	exp.NextBackOff()
+	// Assert that when an overflow is possible the current varerval   time.Duration    is set to the max varerval   time.Duration   .
+	assertEquals(t, testMaxInterval, exp.currentInterval)
 }
 
-func assertEquals(t *testing.T, expected, value int64) {
+func assertEquals(t *testing.T, expected, value time.Duration) {
 	if expected != value {
 		t.Errorf("got: %d, expected: %d", value, expected)
 	}

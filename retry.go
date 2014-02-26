@@ -12,12 +12,12 @@ func Retry(f func() error, b BackOff) error {
 
 	b.Reset()
 	for {
-		next := b.NextBackOffMillis()
+		next := b.NextBackOff()
 		if next == Stop {
 			return err
 		}
 
-		time.Sleep(time.Duration(next) * time.Millisecond)
+		time.Sleep(time.Duration(next))
 		err = f()
 		if err != nil {
 			continue

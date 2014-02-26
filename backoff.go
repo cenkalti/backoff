@@ -1,20 +1,22 @@
 package backoff
 
+import "time"
+
 type BackOff interface {
-	NextBackOffMillis() int64
+	NextBackOff() time.Duration
 	Reset()
 }
 
-const Stop int64 = -1
+const Stop time.Duration = time.Duration(-1)
 
 type ZeroBackOff struct{}
 
 func (b *ZeroBackOff) Reset() {}
 
-func (b *ZeroBackOff) NextBackOffMillis() int64 { return 0 }
+func (b *ZeroBackOff) NextBackOff() time.Duration { return 0 }
 
 type StopBackOff struct{}
 
 func (b *StopBackOff) Reset() {}
 
-func (b *StopBackOff) NextBackOffMillis() int64 { return Stop }
+func (b *StopBackOff) NextBackOff() time.Duration { return Stop }
