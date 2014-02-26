@@ -50,9 +50,9 @@ type ExponentialBackoff struct {
 	Multiplier            float64
 	MaxIntervalMillis     int64
 	MaxElapsedTimeMillis  int64
+	NanoTimer             NanoTimer
 	currentIntervalMillis int64
 	startTimeNanos        int64
-	NanoTimer             NanoTimer
 }
 
 type NanoTimer interface {
