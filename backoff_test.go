@@ -1,8 +1,6 @@
 package backoff
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestNextBackOffMillis(t *testing.T) {
 	subtestNextBackOffMillis(t, 0, new(ZeroBackOff))
