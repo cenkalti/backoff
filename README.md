@@ -11,3 +11,16 @@ This is a Go port of the exponential backoff algorithm from
 is an algorithm that uses feedback to multiplicatively decrease the rate of some process,
 in order to gradually find an acceptable rate.
 The retries exponentially increase and stop increasing when a certain threshold is met.
+
+Simple example:
+
+    operation := func() error {
+        // An operation that migth fail
+    }
+
+    err := backoff.Retry(operation, NewExponentialBackoff())
+    if err != nil {
+        // handle error
+    }
+
+    // operation is successfull
