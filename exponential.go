@@ -77,13 +77,13 @@ func NewExponentialBackoff() *ExponentialBackoff {
 		Multiplier:          DefaultMultiplier,
 		MaxInterval:         DefaultMaxInterval,
 		MaxElapsedTime:      DefaultMaxElapsedTime,
-		Clock:               systemTimer{},
+		Clock:               systemClock{},
 	}
 }
 
-type systemTimer struct{}
+type systemClock struct{}
 
-func (t systemTimer) Now() time.Time {
+func (t systemClock) Now() time.Time {
 	return time.Now()
 }
 
