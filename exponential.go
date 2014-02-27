@@ -100,9 +100,8 @@ func (b *ExponentialBackoff) NextBackOff() time.Duration {
 	if b.GetElapsedTime() > b.MaxElapsedTime {
 		return Stop
 	}
-	var randomizedInterval time.Duration = getRandomValueFromInterval(b.RandomizationFactor, rand.Float64(), b.currentInterval)
-	b.incrementCurrentInterval()
-	return randomizedInterval
+	defer b.incrementCurrentInterval()
+	return getRandomValueFromInterval(b.RandomizationFactor, rand.Float64(), b.currentInterval)
 }
 
 // GetElapsedTime returns the elapsed time since an ExponentialBackOff instance
