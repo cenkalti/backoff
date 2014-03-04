@@ -26,7 +26,7 @@ Simple retry helper that uses exponential back-off algorithm:
 
 ```go
 operation := func() error {
-    // An operation that migth fail
+    // An operation that might fail
 }
 
 err := backoff.Retry(operation, backoff.NewExponentialBackoff())
