@@ -17,7 +17,7 @@ The retries exponentially increase and stop increasing when a certain threshold 
 ## Install
 
 ```bash
-go get github.com/cenk/backoff
+go get github.com/cenkalti/backoff
 ```
 
 ## Example
