@@ -16,24 +16,19 @@ import "time"
 //
 // 	// operation is successfull
 func Retry(f func() error, b BackOff) error {
-	err := f()
-	if err == nil {
-		return nil
-	}
+	var err error
+	var next time.Duration
 
 	b.Reset()
 	for {
-		next := b.NextBackOff()
-		if next == Stop {
+		if err = f(); err == nil {
+			return nil
+		}
+
+		if next = b.NextBackOff(); next == Stop {
 			return err
 		}
 
-		time.Sleep(time.Duration(next))
-		err = f()
-		if err != nil {
-			continue
-		}
-
-		return nil
+		time.Sleep(next)
 	}
 }
