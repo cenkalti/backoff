@@ -3,6 +3,7 @@ package backoff
 import "time"
 
 // Retry the function f until it does not return error or BackOff stops.
+// f is guaranteed to be run at least once.
 //
 // Example:
 // 	operation := func() error {
