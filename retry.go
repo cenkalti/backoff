@@ -4,6 +4,7 @@ import "time"
 
 // Retry the function f until it does not return error or BackOff stops.
 // f is guaranteed to be run at least once.
+// It is the caller's responsibility to reset b after Retry returns.
 //
 // Example:
 // 	operation := func() error {
