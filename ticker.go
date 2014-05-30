@@ -39,7 +39,8 @@ type Ticker struct {
 }
 
 // NewTicker returns a new Ticker containing a channel that will send the time at times
-// specified by the BackOff argument. BackOff is reset when the Ticker is created.
+// specified by the BackOff argument. Ticker is guaranteed to tick at least once.
+// Ticker's channel is closed when Stop method is called or BackOff stops.
 func NewTicker(b BackOff) *Ticker {
 	c := make(chan time.Time)
 	t := &Ticker{
@@ -61,23 +62,31 @@ func (t *Ticker) Stop() {
 }
 
 func (t *Ticker) run() {
-	select {
-	case t.c <- time.Now():
-	case <-t.stop:
-		return
-	}
+	var next time.Duration
+	var afterC <-chan time.Time
 
-	t.b.Reset()
+	defer close(t.c)
+
+	first := make(chan time.Time, 1)
+	first <- time.Now()
+
 	for {
-		next := t.b.NextBackOff()
-		if next == Stop {
-			t.Stop()
-			return
-		}
-
 		select {
-		case tick := <-time.After(next):
+		case tick := <-first:
 			t.c <- tick
+			t.b.Reset()
+			next = t.b.NextBackOff()
+			if next == Stop {
+				return
+			}
+			afterC = time.After(next)
+		case tick := <-afterC:
+			t.c <- tick
+			next = t.b.NextBackOff()
+			if next == Stop {
+				return
+			}
+			afterC = time.After(next)
 		case <-t.stop:
 			return
 		}
