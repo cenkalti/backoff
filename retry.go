@@ -6,17 +6,18 @@ import "time"
 // f is guaranteed to be run at least once.
 // It is the caller's responsibility to reset b after Retry returns.
 //
-// Example:
+// Usage:
 // 	operation := func() error {
 // 		// An operation that may fail
 // 	}
 //
 // 	err := backoff.Retry(operation, backoff.NewExponentialBackoff())
 // 	if err != nil {
-// 		// handle error
+// 		// Operation has failed.
 // 	}
 //
-// 	// operation is successfull
+// 	// Operation is successfull.
+//
 func Retry(f func() error, b BackOff) error {
 	var err error
 	var next time.Duration
