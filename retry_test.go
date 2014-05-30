@@ -2,6 +2,7 @@ package backoff
 
 import (
 	"errors"
+	"log"
 	"testing"
 )
 
@@ -9,17 +10,17 @@ func TestRetry(t *testing.T) {
 	const successOn = 3
 	var i = 0
 
-	// This function is successfull after "successOn" calls.
+	// This function is successfull on "successOn" calls.
 	f := func() error {
 		i++
-		t.Logf("function is called %d. time", i)
+		log.Printf("function is called %d. time\n", i)
 
 		if i == successOn {
-			t.Log("OK")
+			log.Println("OK")
 			return nil
 		}
 
-		t.Log("error")
+		log.Println("error")
 		return errors.New("error")
 	}
 
