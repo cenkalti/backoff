@@ -15,7 +15,7 @@ func TestBackOff(t *testing.T) {
 		testMaxElapsedTime      = 15 * time.Minute
 	)
 
-	exp := NewExponentialBackoff()
+	exp := NewExponentialBackOff()
 	exp.InitialInterval = testInitialInterval
 	exp.RandomizationFactor = testRandomizationFactor
 	exp.Multiplier = testMultiplier
@@ -64,7 +64,7 @@ func (c *TestClock) Now() time.Time {
 }
 
 func TestGetElapsedTime(t *testing.T) {
-	var exp = NewExponentialBackoff()
+	var exp = NewExponentialBackOff()
 	exp.Clock = &TestClock{}
 	exp.Reset()
 
@@ -75,7 +75,7 @@ func TestGetElapsedTime(t *testing.T) {
 }
 
 func TestMaxElapsedTime(t *testing.T) {
-	var exp = NewExponentialBackoff()
+	var exp = NewExponentialBackOff()
 	exp.Clock = &TestClock{start: time.Time{}.Add(10000 * time.Second)}
 	if exp.NextBackOff() != Stop {
 		t.Error("error2")
@@ -93,7 +93,7 @@ func TestBackOffOverflow(t *testing.T) {
 		testMultiplier      float64       = 2.1
 	)
 
-	exp := NewExponentialBackoff()
+	exp := NewExponentialBackOff()
 	exp.InitialInterval = testInitialInterval
 	exp.Multiplier = testMultiplier
 	exp.MaxInterval = testMaxInterval

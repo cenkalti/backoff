@@ -24,7 +24,7 @@ func TestTicker(t *testing.T) {
 		return errors.New("error")
 	}
 
-	b := NewExponentialBackoff()
+	b := NewExponentialBackOff()
 	ticker := NewTicker(b)
 
 	var err error

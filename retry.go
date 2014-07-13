@@ -11,7 +11,7 @@ import "time"
 // 		// An operation that may fail
 // 	}
 //
-// 	err := backoff.Retry(operation, backoff.NewExponentialBackoff())
+// 	err := backoff.Retry(operation, backoff.NewExponentialBackOff())
 // 	if err != nil {
 // 		// Operation has failed.
 // 	}

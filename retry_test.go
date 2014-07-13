@@ -24,7 +24,7 @@ func TestRetry(t *testing.T) {
 		return errors.New("error")
 	}
 
-	err := Retry(f, NewExponentialBackoff())
+	err := Retry(f, NewExponentialBackOff())
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
 	}

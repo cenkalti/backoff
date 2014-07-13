@@ -29,7 +29,7 @@ operation := func() error {
     // An operation that might fail
 }
 
-err := backoff.Retry(operation, backoff.NewExponentialBackoff())
+err := backoff.Retry(operation, backoff.NewExponentialBackOff())
 if err != nil {
     // handle error
 }

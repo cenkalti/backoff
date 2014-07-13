@@ -16,7 +16,7 @@ import (
 //	ticker := backoff.NewTicker(b)
 //
 // 	var err error
-//	for t = range ticker.C {
+//	for _ = range ticker.C {
 //		if err = operation(); err != nil {
 //			log.Println(err, "will retry...")
 //			continue
