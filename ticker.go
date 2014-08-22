@@ -76,7 +76,11 @@ func (t *Ticker) run() {
 
 		select {
 		case tick = <-first:
-			t.c <- tick
+			select {
+			case t.c <- tick:
+			case <-t.stop:
+				return
+			}
 			t.b.Reset()
 			next = t.b.NextBackOff()
 			if next == Stop {
@@ -84,7 +88,11 @@ func (t *Ticker) run() {
 			}
 			afterC = time.After(next)
 		case tick = <-afterC:
-			t.c <- tick
+			select {
+			case t.c <- tick:
+			case <-t.stop:
+				return
+			}
 			next = t.b.NextBackOff()
 			if next == Stop {
 				return
