@@ -63,41 +63,35 @@ func (t *Ticker) Stop() {
 }
 
 func (t *Ticker) run() {
-	var next time.Duration
-	var afterC <-chan time.Time
+	var (
+		next   time.Duration
+		afterC <-chan time.Time
+		tick   time.Time
+	)
 
 	defer close(t.c)
+	t.b.Reset()
 
-	first := make(chan time.Time, 1)
-	first <- time.Now()
-
-	for {
-		var tick time.Time
-
+	send := func() {
 		select {
-		case tick = <-first:
-			select {
-			case t.c <- tick:
-			case <-t.stop:
-				return
-			}
-			t.b.Reset()
-			next = t.b.NextBackOff()
-			if next == Stop {
-				return
-			}
-			afterC = time.After(next)
+		case t.c <- tick:
+		case <-t.stop:
+			return
+		}
+
+		next = t.b.NextBackOff()
+		if next == Stop {
+			t.Stop()
+			return
+		}
+		afterC = time.After(next)
+	}
+
+	send() // Ticker is guaranteed to tick at least once.
+	for {
+		select {
 		case tick = <-afterC:
-			select {
-			case t.c <- tick:
-			case <-t.stop:
-				return
-			}
-			next = t.b.NextBackOff()
-			if next == Stop {
-				return
-			}
-			afterC = time.After(next)
+			send()
 		case <-t.stop:
 			return
 		}
