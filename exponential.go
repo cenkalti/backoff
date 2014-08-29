@@ -56,6 +56,7 @@ type ExponentialBackOff struct {
 	startTime       time.Time
 }
 
+// Clock is an interface that returns current time for BackOff.
 type Clock interface {
 	Now() time.Time
 }
@@ -87,6 +88,7 @@ func (t systemClock) Now() time.Time {
 	return time.Now()
 }
 
+// SystemClock implements Clock interface that uses time.Now().
 var SystemClock = systemClock{}
 
 // Reset the interval back to the initial retry interval and restarts the timer.
