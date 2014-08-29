@@ -12,7 +12,7 @@ type BackOff interface {
 	//
 	// Example usage:
 	//
-	// 	long duration = backoff.NextBackOff();
+	// 	duration := backoff.NextBackOff();
 	// 	if (duration == backoff.Stop) {
 	// 		// do not retry operation
 	// 	} else {
