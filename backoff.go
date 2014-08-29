@@ -26,7 +26,7 @@ type BackOff interface {
 }
 
 // Indicates that no more retries should be made for use in NextBackOff().
-const Stop time.Duration = time.Duration(-1)
+const Stop time.Duration = -1
 
 // ZeroBackOff is a fixed back-off policy whose back-off time is always zero,
 // meaning that the operation is retried immediately without waiting.

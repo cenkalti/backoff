@@ -62,11 +62,11 @@ type Clock interface {
 
 // Default values for ExponentialBackOff.
 const (
-	DefaultInitialInterval     = time.Duration(500 * time.Millisecond)
+	DefaultInitialInterval     = 500 * time.Millisecond
 	DefaultRandomizationFactor = 0.5
 	DefaultMultiplier          = 1.5
-	DefaultMaxInterval         = time.Duration(60 * time.Second)
-	DefaultMaxElapsedTime      = time.Duration(15 * time.Minute)
+	DefaultMaxInterval         = 60 * time.Second
+	DefaultMaxElapsedTime      = 15 * time.Minute
 )
 
 // NewExponentialBackOff creates an instance of ExponentialBackOff using default values.
