@@ -77,7 +77,7 @@ func NewExponentialBackOff() *ExponentialBackOff {
 		Multiplier:          DefaultMultiplier,
 		MaxInterval:         DefaultMaxInterval,
 		MaxElapsedTime:      DefaultMaxElapsedTime,
-		Clock:               systemClock{},
+		Clock:               SystemClock,
 	}
 }
 
@@ -86,6 +86,8 @@ type systemClock struct{}
 func (t systemClock) Now() time.Time {
 	return time.Now()
 }
+
+var SystemClock = systemClock{}
 
 // Reset the interval back to the initial retry interval and restarts the timer.
 func (b *ExponentialBackOff) Reset() {
