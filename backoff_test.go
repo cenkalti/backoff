@@ -19,3 +19,10 @@ func subtestNextBackOff(t *testing.T, expectedValue time.Duration, backOffPolicy
 		}
 	}
 }
+
+func TestConstantBackoff(t *testing.T) {
+	backoff := NewConstantBackOff()
+	if backoff.NextBackOff() != DefaultInitialInterval {
+		t.Error("Should have been default interval")
+	}
+}
