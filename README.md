@@ -54,6 +54,7 @@ for t = range ticker.C {
         continue
     }
 
+    ticker.Stop()
     break
 }
 
