@@ -53,7 +53,7 @@ func NewTicker(b BackOff) *Ticker {
 		stop: make(chan struct{}),
 	}
 	go t.run()
-	runtime.SetFinalizer(t, func(x *Ticker) { x.Stop() })
+	runtime.SetFinalizer(t, (*Ticker).Stop)
 	return t
 }
 
