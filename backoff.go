@@ -45,12 +45,12 @@ func (b *StopBackOff) Reset() {}
 func (b *StopBackOff) NextBackOff() time.Duration { return Stop }
 
 type ConstantBackOff struct {
-	RetryInterval time.Duration
+	Interval time.Duration
 }
 
 func (b *ConstantBackOff) Reset()                     {}
-func (b *ConstantBackOff) NextBackOff() time.Duration { return b.RetryInterval }
+func (b *ConstantBackOff) NextBackOff() time.Duration { return b.Interval }
 
-func NewConstantBackOff() *ConstantBackOff {
-	return &ConstantBackOff{RetryInterval: DefaultInitialInterval}
+func NewConstantBackOff(d time.Duration) *ConstantBackOff {
+	return &ConstantBackOff{Interval: d}
 }
