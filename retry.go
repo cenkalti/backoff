@@ -6,6 +6,9 @@ import "time"
 // f is guaranteed to be run at least once.
 // It is the caller's responsibility to reset b after Retry returns.
 //
+// Retry sleeps the goroutine for the duration returned by BackOff after a
+// failed operation returns.
+//
 // Usage:
 // 	operation := func() error {
 // 		// An operation that may fail

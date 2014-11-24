@@ -48,6 +48,9 @@ b := backoff.NewExponentialBackOff()
 ticker := backoff.NewTicker(b)
 
 var err error
+
+// Ticks will continue to arrive when the previous operation is still running,
+// so operations that take a while to fail could run in quick succession.
 for t = range ticker.C {
     if err = operation(); err != nil {
         log.Println(err, "will retry...")
