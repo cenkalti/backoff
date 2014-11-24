@@ -8,6 +8,9 @@ import (
 
 // Ticker holds a channel that delivers `ticks' of a clock at times reported by a BackOff.
 //
+// Ticks will continue to arrive when the previous operation is still running,
+// so operations that take a while to fail could run in quick succession.
+//
 // Usage:
 // 	operation := func() error {
 // 		// An operation that may fail
