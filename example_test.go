@@ -31,7 +31,7 @@ func ExampleTicker() error {
 
 	// Ticks will continue to arrive when the previous operation is still running,
 	// so operations that take a while to fail could run in quick succession.
-	for range ticker.C {
+	for _ = range ticker.C {
 		if err = operation(); err != nil {
 			log.Println(err, "will retry...")
 			continue
