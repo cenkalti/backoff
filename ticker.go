@@ -10,32 +10,6 @@ import (
 //
 // Ticks will continue to arrive when the previous operation is still running,
 // so operations that take a while to fail could run in quick succession.
-//
-// Usage:
-// 	operation := func() error {
-// 		// An operation that may fail
-// 	}
-//
-//	b := backoff.NewExponentialBackOff()
-//	ticker := backoff.NewTicker(b)
-//
-// 	var err error
-//	for _ = range ticker.C {
-//		if err = operation(); err != nil {
-//			log.Println(err, "will retry...")
-//			continue
-//		}
-//
-//		ticker.Stop()
-//		break
-//	}
-//
-// 	if err != nil {
-// 		// Operation has failed.
-// 	}
-//
-// 	// Operation is successfull.
-//
 type Ticker struct {
 	C        <-chan time.Time
 	c        chan time.Time
