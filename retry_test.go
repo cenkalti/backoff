@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"testing"
+
+	"golang.org/x/net/context"
 )
 
 func TestRetry(t *testing.T) {
@@ -30,5 +32,31 @@ func TestRetry(t *testing.T) {
 	}
 	if i != successOn {
 		t.Errorf("invalid number of retries: %d", i)
+	}
+}
+
+func TestRetryWithContext(t *testing.T) {
+	const successOn = 3
+	var i = 0
+
+	// This function is successfull on "successOn" calls.
+	f := func() error {
+		i++
+		log.Printf("function is called %d. time\n", i)
+
+		if i == successOn {
+			log.Println("OK")
+			return nil
+		}
+
+		log.Println("error")
+		return errors.New("error")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := RetryNotifyWithContext(ctx, f, NewExponentialBackOff(), nil)
+	if err != ctx.Err() {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
