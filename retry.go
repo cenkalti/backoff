@@ -37,15 +37,13 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 // is closed.
 func RetryNotifyWithContext(ctx context.Context, operation Operation,
 	b BackOff, notify Notify) error {
-	var ctxDone <-chan struct{}
+	// If context is already canceled, return immediately.
 	if ctx != nil {
-		ctxDone = ctx.Done()
-	}
-
-	select {
-	case <-ctxDone:
-		return ctx.Err()
-	default:
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 	}
 
 	var err error
@@ -65,11 +63,14 @@ func RetryNotifyWithContext(ctx context.Context, operation Operation,
 			notify(err, next)
 		}
 
-		ch := time.After(next)
-		select {
-		case <-ctxDone:
-			return ctx.Err()
-		case <-ch:
+		if ctx != nil {
+			select {
+			case <-time.After(next):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		} else {
+			time.Sleep(next)
 		}
 	}
 }
