@@ -36,20 +36,8 @@ func TestRetry(t *testing.T) {
 }
 
 func TestRetryWithContext(t *testing.T) {
-	const successOn = 3
-	var i = 0
-
-	// This function is successfull on "successOn" calls.
 	f := func() error {
-		i++
-		log.Printf("function is called %d. time\n", i)
-
-		if i == successOn {
-			log.Println("OK")
-			return nil
-		}
-
-		log.Println("error")
+		t.Error("This function shouldn't be called at all")
 		return errors.New("error")
 	}
 
