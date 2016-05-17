@@ -34,7 +34,8 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 // RetryNotifyWithContext calls notify function with the error and
 // wait duration for each failed attempt before sleep. If ctx is
 // non-nil, it will return early from a sleep when it's Done channel
-// is closed.
+// is closed, and it will also not call the operation if the context
+// is already canceled.
 func RetryNotifyWithContext(ctx context.Context, operation Operation,
 	b BackOff, notify Notify) error {
 	// If context is already canceled, return immediately.
