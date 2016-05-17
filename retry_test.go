@@ -35,7 +35,7 @@ func TestRetry(t *testing.T) {
 	}
 }
 
-func TestRetryWithContext(t *testing.T) {
+func TestRetryWithCanceledContext(t *testing.T) {
 	f := func() error {
 		t.Error("This function shouldn't be called at all")
 		return errors.New("error")
