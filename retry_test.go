@@ -48,3 +48,23 @@ func TestRetryWithCanceledContext(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestRetryWithCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	called := false
+	f := func() error {
+		if called {
+			t.Error("This function shouldn't be called more than once")
+		} else {
+			cancel()
+			called = true
+		}
+		return errors.New("error")
+	}
+
+	err := RetryNotifyWithContext(ctx, f, NewExponentialBackOff(), nil)
+	if err != ctx.Err() {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
