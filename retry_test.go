@@ -43,6 +43,7 @@ func TestRetryWithCanceledContext(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	err := RetryNotifyWithContext(ctx, f, NewExponentialBackOff(), nil)
 	if err != ctx.Err() {
 		t.Errorf("unexpected error: %v", err)
@@ -51,6 +52,7 @@ func TestRetryWithCanceledContext(t *testing.T) {
 
 func TestRetryWithCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	called := false
 	f := func() error {
