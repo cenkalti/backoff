@@ -37,8 +37,6 @@ func RetryNotify(Operation, BackOff, Notify)
 
 ## Examples
 
-See more advanced examples in the [godoc][advanced example].
-
 ### Retry
 
 Simple retry helper that uses the default exponential backoff algorithm:
@@ -60,6 +58,8 @@ return nil
 ```
 
 ### Ticker
+
+Ticker is for using backoff algorithms with channels.
 
 ```go
 operation := func() error {
