@@ -1,4 +1,4 @@
-# Exponential Backoff [![GoDoc][godoc image]][godoc] [![Build Status][travis image]][travis]
+# Exponential Backoff [![GoDoc][godoc image]][godoc] [![Build Status][travis image]][travis] [![Coverage Status][coveralls image]][coveralls]
 
 This is a Go port of the exponential backoff algorithm from [Google's HTTP Client Library for Java][google-http-java-client].
 
@@ -108,7 +108,9 @@ $ go test -v -cover
 [godoc]: https://godoc.org/github.com/cenk/backoff
 [godoc image]: https://godoc.org/github.com/cenk/backoff?status.png
 [travis]: https://travis-ci.org/cenk/backoff
-[travis image]: https://travis-ci.org/cenk/backoff.png
+[travis image]: https://travis-ci.org/cenk/backoff.png?branch=master
+[coveralls]: https://coveralls.io/github/cenk/backoff?branch=master
+[coveralls image]: https://coveralls.io/repos/github/cenk/backoff/badge.svg?branch=master
 
 [google-http-java-client]: https://github.com/google/google-http-java-client
 [exponential backoff wiki]: http://en.wikipedia.org/wiki/Exponential_backoff
