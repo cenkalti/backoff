@@ -10,7 +10,7 @@ func TestRetry(t *testing.T) {
 	const successOn = 3
 	var i = 0
 
-	// This function is successfull on "successOn" calls.
+	// This function is successful on "successOn" calls.
 	f := func() error {
 		i++
 		log.Printf("function is called %d. time\n", i)
