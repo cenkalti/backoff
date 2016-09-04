@@ -32,7 +32,7 @@ type Operation func() error
 type Notify func(error, time.Duration)
 
 func Retry(Operation, BackOff) error
-func RetryNotify(Operation, BackOff, Notify)
+func RetryNotify(Operation, BackOff, Notify) error
 ```
 
 ## Examples
