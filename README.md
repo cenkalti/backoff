@@ -7,49 +7,9 @@ is an algorithm that uses feedback to multiplicatively decrease the rate of some
 in order to gradually find an acceptable rate.
 The retries exponentially increase and stop increasing when a certain threshold is met.
 
-## How To
-
-We define two functions, `Retry()` and `RetryNotify()`.
-They receive an `Operation` to execute, a `BackOff` algorithm,
-and an optional `Notify` error handler.
-
-The operation will be executed, and will be retried on failure with delay
-as given by the backoff algorithm. The backoff algorithm can also decide when to stop
-retrying.
-In addition, the notify error handler will be called after each failed attempt,
-except for the last time, whose error should be handled by the caller.
-
-```go
-// An Operation is executing by Retry() or RetryNotify().
-// The operation will be retried using a backoff policy if it returns an error.
-type Operation func() error
-
-// Notify is a notify-on-error function. It receives an operation error and
-// backoff delay if the operation failed (with an error).
-//
-// NOTE that if the backoff policy stated to stop retrying,
-// the notify function isn't called.
-type Notify func(error, time.Duration)
-
-func Retry(Operation, BackOff) error
-func RetryNotify(Operation, BackOff, Notify) error
-```
-
-## Examples
+## Usage
 
 See https://godoc.org/github.com/cenk/backoff#pkg-examples
-
-## Getting Started
-
-```bash
-# install
-$ go get github.com/cenk/backoff
-
-# test
-$ cd $GOPATH/src/github.com/cenk/backoff
-$ go get -t ./...
-$ go test -v -cover
-```
 
 [godoc]: https://godoc.org/github.com/cenk/backoff
 [godoc image]: https://godoc.org/github.com/cenk/backoff?status.png
