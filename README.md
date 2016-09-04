@@ -11,6 +11,12 @@ The retries exponentially increase and stop increasing when a certain threshold 
 
 See https://godoc.org/github.com/cenk/backoff#pkg-examples
 
+## Contributing
+
+* I would like to keep this library as small as possible.
+* Please don't send a PR without opening an issue and discussing it first.
+* If proposed change is not a common use case, I will probably not accept it.
+
 [godoc]: https://godoc.org/github.com/cenk/backoff
 [godoc image]: https://godoc.org/github.com/cenk/backoff?status.png
 [travis]: https://travis-ci.org/cenk/backoff
