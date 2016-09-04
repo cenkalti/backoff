@@ -3,7 +3,7 @@ package backoff
 import "log"
 
 func ExampleRetry() {
-	// An operation that might fail.
+	// An operation that may fail.
 	operation := func() error {
 		return nil // or an error
 	}
@@ -18,13 +18,12 @@ func ExampleRetry() {
 }
 
 func ExampleTicker() {
-	// An operation that might fail
+	// An operation that may fail.
 	operation := func() error {
 		return nil // or an error
 	}
 
-	b := NewExponentialBackOff()
-	ticker := NewTicker(b)
+	ticker := NewTicker(NewExponentialBackOff())
 
 	var err error
 
