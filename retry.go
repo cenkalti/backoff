@@ -27,6 +27,8 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 	var err error
 	var next time.Duration
 
+	cb := ensureContext(b)
+
 	b.Reset()
 	for {
 		if err = operation(); err == nil {
@@ -41,6 +43,13 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			notify(err, next)
 		}
 
-		time.Sleep(next)
+		t := time.NewTimer(next)
+
+		select {
+		case <-cb.Context().Done():
+			t.Stop()
+			return err
+		case <-t.C:
+		}
 	}
 }
