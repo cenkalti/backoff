@@ -70,3 +70,30 @@ func TestRetryContext(t *testing.T) {
 		t.Errorf("invalid number of retries: %d", i)
 	}
 }
+
+func TestRetryPermenent(t *testing.T) {
+	const permanentOn = 3
+	var i = 0
+
+	// This function fails permanently after permanentOn tries
+	f := func() error {
+		i++
+		log.Printf("function is called %d. time\n", i)
+
+		if i == permanentOn {
+			log.Println("permanent error")
+			return Permanent(errors.New("permanent error"))
+		}
+
+		log.Println("error")
+		return errors.New("error")
+	}
+
+	err := Retry(f, NewExponentialBackOff())
+	if err == nil || err.Error() != "permanent error" {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if i != permanentOn {
+		t.Errorf("invalid number of retries: %d", i)
+	}
+}
