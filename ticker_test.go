@@ -1,12 +1,13 @@
 package backoff
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"testing"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 func TestTicker(t *testing.T) {

@@ -1,8 +1,9 @@
 package backoff
 
 import (
-	"context"
 	"log"
+
+	"golang.org/x/net/context"
 )
 
 func ExampleRetry() {
