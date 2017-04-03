@@ -1,10 +1,11 @@
-// +build go1.7
+// +build !go1.7
 
 package backoff
 
 import (
-	"context"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 // BackOffContext is a backoff policy that stops retrying after the context
