@@ -17,7 +17,7 @@ type Notify func(error, time.Duration)
 // o is guaranteed to be run at least once.
 // It is the caller's responsibility to reset b after Retry returns.
 //
-// If o returns a *PermanentError, the operation is not retried, and the
+// If o returns a *FatalError, the operation is not retried, and the
 // wrapped error is returned.
 //
 // Retry sleeps the goroutine for the duration returned by BackOff after a
@@ -38,6 +38,11 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			return nil
 		}
 
+		if fatal, ok := err.(*FatalError); ok {
+			return fatal.Err
+		}
+
+		//For backwards-compatibility
 		if permanent, ok := err.(*PermanentError); ok {
 			return permanent.Err
 		}
@@ -61,6 +66,23 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 	}
 }
 
+// FatalError signals that the operation should not be retried because the outcome won't change.
+type FatalError struct {
+	Err error
+}
+
+func (e *FatalError) Error() string {
+	return e.Err.Error()
+}
+
+// Fatal wraps the given err in a *FatalError.
+func Fatal(err error) *FatalError {
+	return &FatalError{
+		Err: err,
+	}
+}
+
+// Deprecated: Use FatalError instead
 // PermanentError signals that the operation should not be retried.
 type PermanentError struct {
 	Err error
@@ -70,6 +92,7 @@ func (e *PermanentError) Error() string {
 	return e.Err.Error()
 }
 
+// Deprecated: Use FatalError instead
 // Permanent wraps the given err in a *PermanentError.
 func Permanent(err error) *PermanentError {
 	return &PermanentError{
