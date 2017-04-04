@@ -42,6 +42,11 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			return fatal.Err
 		}
 
+		//For backwards-compatibility
+		if permanent, ok := err.(*PermanentError); ok {
+			return permanent.Err
+		}
+
 		if next = b.NextBackOff(); next == Stop {
 			return err
 		}
@@ -73,6 +78,24 @@ func (e *FatalError) Error() string {
 // Fatal wraps the given err in a *FatalError.
 func Fatal(err error) *FatalError {
 	return &FatalError{
+		Err: err,
+	}
+}
+
+// Deprecated: Use FatalError instead
+// PermanentError signals that the operation should not be retried.
+type PermanentError struct {
+	Err error
+}
+
+func (e *PermanentError) Error() string {
+	return e.Err.Error()
+}
+
+// Deprecated: Use FatalError instead
+// Permanent wraps the given err in a *PermanentError.
+func Permanent(err error) *PermanentError {
+	return &PermanentError{
 		Err: err,
 	}
 }
