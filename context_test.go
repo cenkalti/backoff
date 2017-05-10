@@ -1,10 +1,9 @@
 package backoff
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 func TestContext(t *testing.T) {
