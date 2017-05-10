@@ -1,13 +1,12 @@
 package backoff
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 func TestRetry(t *testing.T) {
