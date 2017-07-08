@@ -118,6 +118,9 @@ func (b *ExponentialBackOff) NextBackOff() time.Duration {
 		return Stop
 	}
 	defer b.incrementCurrentInterval()
+	if b.random == nil {
+		b.random = rand.New(rand.NewSource(time.Now().UnixNano()))
+	}
 	return getRandomValueFromInterval(b.RandomizationFactor, b.random.Float64(), b.currentInterval)
 }
 
