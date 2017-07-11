@@ -3,7 +3,7 @@ package backoff
 import "time"
 
 /*
-WithMaxTries creates a wrapper around anther BackOff, which will
+WithMaxTries creates a wrapper around another BackOff, which will
 return Stop if NextBackOff() has been called too many times since
 the last time Reset() was called
 
