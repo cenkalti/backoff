@@ -29,6 +29,7 @@ func NewTicker(b BackOff) *Ticker {
 		b:    ensureContext(b),
 		stop: make(chan struct{}),
 	}
+	t.b.Reset()
 	go t.run()
 	runtime.SetFinalizer(t, (*Ticker).Stop)
 	return t
@@ -42,7 +43,6 @@ func (t *Ticker) Stop() {
 func (t *Ticker) run() {
 	c := t.c
 	defer close(c)
-	t.b.Reset()
 
 	// Ticker is guaranteed to tick at least once.
 	afterC := t.send(time.Now())
