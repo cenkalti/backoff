@@ -1,7 +1,6 @@
 package backoff
 
 import (
-	"runtime"
 	"sync"
 	"time"
 )
