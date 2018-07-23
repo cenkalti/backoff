@@ -1,9 +1,8 @@
 package backoff
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // BackOffContext is a backoff policy that stops retrying after the context
