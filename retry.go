@@ -41,7 +41,7 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			return permanent.Err
 		}
 
-		if next = b.NextBackOff(); next == Stop {
+		if next = cb.NextBackOff(); next == Stop {
 			return err
 		}
 
