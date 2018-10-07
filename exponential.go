@@ -2,6 +2,7 @@ package backoff
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -63,6 +64,7 @@ type ExponentialBackOff struct {
 
 	currentInterval time.Duration
 	startTime       time.Time
+	mutex           *sync.Mutex
 }
 
 // Clock is an interface that returns current time for BackOff.
@@ -88,6 +90,7 @@ func NewExponentialBackOff() *ExponentialBackOff {
 		MaxInterval:         DefaultMaxInterval,
 		MaxElapsedTime:      DefaultMaxElapsedTime,
 		Clock:               SystemClock,
+		mutex:               &sync.Mutex{},
 	}
 	b.Reset()
 	return b
@@ -104,6 +107,9 @@ var SystemClock = systemClock{}
 
 // Reset the interval back to the initial retry interval and restarts the timer.
 func (b *ExponentialBackOff) Reset() {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
 	b.currentInterval = b.InitialInterval
 	b.startTime = b.Clock.Now()
 }
@@ -111,6 +117,9 @@ func (b *ExponentialBackOff) Reset() {
 // NextBackOff calculates the next backoff interval using the formula:
 // 	Randomized interval = RetryInterval +/- (RandomizationFactor * RetryInterval)
 func (b *ExponentialBackOff) NextBackOff() time.Duration {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
 	// Make sure we have not gone over the maximum elapsed time.
 	if b.MaxElapsedTime != 0 && b.GetElapsedTime() > b.MaxElapsedTime {
 		return Stop

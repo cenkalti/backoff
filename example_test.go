@@ -2,7 +2,10 @@ package backoff
 
 import (
 	"context"
+	"errors"
 	"log"
+	"sync"
+	"time"
 )
 
 func ExampleRetry() {
@@ -38,6 +41,60 @@ func ExampleRetryContext() {
 	}
 
 	// Operation is successful.
+}
+
+func ExampleThreadSafe() {
+	backoff := NewExponentialBackOff()
+
+	backoff.MaxElapsedTime = time.Millisecond * 500
+	backoff.MaxInterval = time.Millisecond * 200
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	failTimes := 3
+
+	go func() {
+		tries := 0
+
+		err := Retry(func() error {
+			if tries >= failTimes {
+				return nil
+			}
+
+			tries++
+			return errors.New("FAILED")
+		}, backoff)
+
+		if err != nil {
+			// Handle error.
+		}
+
+		// Operation is successful.
+		wg.Done()
+	}()
+
+	go func() {
+		tries := 0
+
+		err := Retry(func() error {
+			if tries >= failTimes {
+				return nil
+			}
+
+			tries++
+			return errors.New("FAILED")
+		}, backoff)
+
+		if err != nil {
+			// Handle error.
+		}
+
+		// Operation is successful.
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
 
 func ExampleTicker() {
