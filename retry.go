@@ -1,6 +1,9 @@
 package backoff
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // An Operation is executing by Retry() or RetryNotify().
 // The operation will be retried using a backoff policy if it returns an error.
@@ -23,9 +26,15 @@ type Notify func(error, time.Duration)
 // failed operation returns.
 func Retry(o Operation, b BackOff) error { return RetryNotify(o, b, nil) }
 
+var retryMutex sync.Mutex
+
 // RetryNotify calls notify function with the error and wait duration
 // for each failed attempt before sleep.
 func RetryNotify(operation Operation, b BackOff, notify Notify) error {
+
+	retryMutex.Lock()
+	defer retryMutex.Unlock()
+
 	var err error
 	var next time.Duration
 	var t *time.Timer
