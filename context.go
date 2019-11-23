@@ -56,7 +56,7 @@ func (b *backOffContext) NextBackOff() time.Duration {
 	default:
 	}
 	next := b.BackOff.NextBackOff()
-	if deadline, ok := b.ctx.Deadline(); ok && time.Until(deadline) < next {
+	if deadline, ok := b.ctx.Deadline(); ok && deadline.Sub(time.Now()) < next { // nolint: gosimple
 		return Stop
 	}
 	return next
