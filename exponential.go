@@ -109,7 +109,7 @@ func (b *ExponentialBackOff) Reset() {
 }
 
 // NextBackOff calculates the next backoff interval using the formula:
-// 	Randomized interval = RetryInterval +/- (RandomizationFactor * RetryInterval)
+// 	Randomized interval = RetryInterval * (1 ± RandomizationFactor)
 func (b *ExponentialBackOff) NextBackOff() time.Duration {
 	// Make sure we have not gone over the maximum elapsed time.
 	if b.MaxElapsedTime != 0 && b.GetElapsedTime() > b.MaxElapsedTime {
