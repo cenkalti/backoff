@@ -103,6 +103,7 @@ func (t systemClock) Now() time.Time {
 var SystemClock = systemClock{}
 
 // Reset the interval back to the initial retry interval and restarts the timer.
+// Reset must be called before using b.
 func (b *ExponentialBackOff) Reset() {
 	b.currentInterval = b.InitialInterval
 	b.startTime = b.Clock.Now()
