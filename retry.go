@@ -59,7 +59,7 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 
 		select {
 		case <-cb.Context().Done():
-			return err
+			return cb.Context().Err();
 		case <-t.C:
 		}
 	}
