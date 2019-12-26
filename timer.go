@@ -29,5 +29,7 @@ func (t *defaultTimer) Start(duration time.Duration) {
 
 // Stop is called when the timer is not used anymore and resources may be freed.
 func (t *defaultTimer) Stop() {
-	t.timer.Stop()
+	if t.timer != nil {
+		t.timer.Stop()
+	}
 }

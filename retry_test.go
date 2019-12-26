@@ -18,7 +18,9 @@ func (t *testTimer) Start(duration time.Duration) {
 }
 
 func (t *testTimer) Stop() {
-	t.timer.Stop()
+	if t.timer != nil {
+		t.timer.Stop()
+	}
 }
 
 func (t *testTimer) C() <-chan time.Time {

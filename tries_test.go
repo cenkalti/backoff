@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"errors"
 	"math/rand"
 	"testing"
 	"time"
@@ -42,13 +43,21 @@ func TestMaxTriesHappy(t *testing.T) {
 	}
 }
 
+// https://github.com/cenkalti/backoff/issues/80
 func TestMaxTriesZero(t *testing.T) {
-	// It might not make sense, but its okay to send a zero
-	bo := WithMaxRetries(&ZeroBackOff{}, uint64(0))
-	for ix := 0; ix < 11; ix++ {
-		d := bo.NextBackOff()
-		if d == Stop {
-			t.Errorf("returned Stop on try %d", ix)
-		}
+	var called int
+
+	b := WithMaxRetries(&ZeroBackOff{}, 0)
+
+	err := Retry(func() error {
+		called++
+		return errors.New("err")
+	}, b)
+
+	if err == nil {
+		t.Errorf("error expected, nil founc")
+	}
+	if called != 1 {
+		t.Errorf("operation is called %d times", called)
 	}
 }
