@@ -28,7 +28,7 @@ func TestTicker(t *testing.T) {
 	}
 
 	b := NewExponentialBackOff()
-	ticker := NewTicker(b)
+	ticker := NewTickerWithTimer(b, &testTimer{})
 	elapsed := b.GetElapsedTime()
 	if elapsed > time.Second {
 		t.Errorf("elapsed time too large: %v", elapsed)
@@ -74,7 +74,7 @@ func TestTickerContext(t *testing.T) {
 	}
 
 	b := WithContext(NewConstantBackOff(time.Millisecond), ctx)
-	ticker := NewTicker(b)
+	ticker := NewTickerWithTimer(b, &testTimer{})
 
 	var err error
 	for range ticker.C {

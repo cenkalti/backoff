@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+type testTimer struct {
+	timer *time.Timer
+}
+
+func (t *testTimer) Start(duration time.Duration) {
+	t.timer = time.NewTimer(0)
+}
+
+func (t *testTimer) Stop() {
+	t.timer.Stop()
+}
+
+func (t *testTimer) C() <-chan time.Time {
+	return t.timer.C
+}
+
 func TestRetry(t *testing.T) {
 	const successOn = 3
 	var i = 0
@@ -27,7 +43,7 @@ func TestRetry(t *testing.T) {
 		return errors.New("error")
 	}
 
-	err := Retry(f, NewExponentialBackOff())
+	err := RetryNotifyWithTimer(f, NewExponentialBackOff(), nil, &testTimer{})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
 	}
@@ -58,7 +74,7 @@ func TestRetryContext(t *testing.T) {
 		return fmt.Errorf("error (%d)", i)
 	}
 
-	err := Retry(f, WithContext(NewConstantBackOff(time.Millisecond), ctx))
+	err := RetryNotifyWithTimer(f, WithContext(NewConstantBackOff(time.Millisecond), ctx), nil, &testTimer{})
 	if err == nil {
 		t.Errorf("error is unexpectedly nil")
 	}
@@ -88,7 +104,7 @@ func TestRetryPermenent(t *testing.T) {
 		return errors.New("error")
 	}
 
-	err := Retry(f, NewExponentialBackOff())
+	err := RetryNotifyWithTimer(f, NewExponentialBackOff(), nil, &testTimer{})
 	if err == nil || err.Error() != "permanent error" {
 		t.Errorf("unexpected error: %s", err)
 	}
