@@ -69,7 +69,7 @@ func RetryNotifyWithTimer(operation Operation, b BackOff, notify Notify, t Timer
 
 		select {
 		case <-ctx.Done():
-			return err
+			return ctx.Err()
 		case <-t.C():
 		}
 	}
