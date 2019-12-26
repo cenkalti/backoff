@@ -27,9 +27,11 @@ type Ticker struct {
 // provided backoff policy (notably calling NextBackOff or Reset)
 // while the ticker is running.
 func NewTicker(b BackOff) *Ticker {
-	return NewTickerWithTimer(b, &DefaultTimer{})
+	return NewTickerWithTimer(b, &defaultTimer{})
 }
 
+// NewTickerWithTimer returns a new Ticker with a custom timer.
+// A default timer that uses system timer is used when nil is passed.
 func NewTickerWithTimer(b BackOff, timer Timer) *Ticker {
 	c := make(chan time.Time)
 	t := &Ticker{

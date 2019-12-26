@@ -33,11 +33,12 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 
 // RetryNotifyWithTimer calls notify function with the error and wait duration using the given Timer
 // for each failed attempt before sleep.
+// A default timer that uses system timer is used when nil is passed.
 func RetryNotifyWithTimer(operation Operation, b BackOff, notify Notify, t Timer) error {
 	var err error
 	var next time.Duration
 	if t == nil {
-		t = &DefaultTimer{}
+		t = &defaultTimer{}
 	}
 
 	defer func() {
