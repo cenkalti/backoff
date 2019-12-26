@@ -38,11 +38,14 @@ func WithContext(b BackOff, ctx context.Context) BackOffContext { // nolint: gol
 	}
 }
 
-func ensureContext(b BackOff) BackOffContext {
+func getContext(b BackOff) context.Context {
 	if cb, ok := b.(BackOffContext); ok {
-		return cb
+		return cb.Context()
 	}
-	return WithContext(b, context.Background())
+	if tb, ok := b.(*backOffTries); ok {
+		return getContext(tb.delegate)
+	}
+	return context.Background()
 }
 
 func (b *backOffContext) Context() context.Context {
