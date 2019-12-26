@@ -21,14 +21,29 @@ type Notify func(error, time.Duration)
 //
 // Retry sleeps the goroutine for the duration returned by BackOff after a
 // failed operation returns.
-func Retry(o Operation, b BackOff) error { return RetryNotify(o, b, nil) }
+func Retry(o Operation, b BackOff) error {
+	return RetryNotify(o, b, nil)
+}
 
 // RetryNotify calls notify function with the error and wait duration
 // for each failed attempt before sleep.
 func RetryNotify(operation Operation, b BackOff, notify Notify) error {
+	return RetryNotifyWithTimer(operation, b, notify, nil)
+}
+
+// RetryNotifyWithTimer calls notify function with the error and wait duration using the given Timer
+// for each failed attempt before sleep.
+// A default timer that uses system timer is used when nil is passed.
+func RetryNotifyWithTimer(operation Operation, b BackOff, notify Notify, t Timer) error {
 	var err error
 	var next time.Duration
-	var t *time.Timer
+	if t == nil {
+		t = &defaultTimer{}
+	}
+
+	defer func() {
+		t.Stop()
+	}()
 
 	ctx := getContext(b)
 
@@ -50,17 +65,12 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			notify(err, next)
 		}
 
-		if t == nil {
-			t = time.NewTimer(next)
-			defer t.Stop()
-		} else {
-			t.Reset(next)
-		}
+		t.Start(next)
 
 		select {
 		case <-ctx.Done():
 			return err
-		case <-t.C:
+		case <-t.C():
 		}
 	}
 }

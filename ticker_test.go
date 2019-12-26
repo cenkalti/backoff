@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"testing"
-	"time"
 )
 
 func TestTicker(t *testing.T) {
@@ -28,11 +27,7 @@ func TestTicker(t *testing.T) {
 	}
 
 	b := NewExponentialBackOff()
-	ticker := NewTicker(b)
-	elapsed := b.GetElapsedTime()
-	if elapsed > time.Second {
-		t.Errorf("elapsed time too large: %v", elapsed)
-	}
+	ticker := NewTickerWithTimer(b, &testTimer{})
 
 	var err error
 	for range ticker.C {
@@ -52,29 +47,24 @@ func TestTicker(t *testing.T) {
 }
 
 func TestTickerContext(t *testing.T) {
-	const cancelOn = 3
 	var i = 0
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+
+	// Cancel context as soon as it is created.
+	// Ticker must stop after first tick.
+	cancel()
 
 	// This function cancels context on "cancelOn" calls.
 	f := func() error {
 		i++
 		log.Printf("function is called %d. time\n", i)
-
-		// cancelling the context in the operation function is not a typical
-		// use-case, however it allows to get predictable test results.
-		if i == cancelOn {
-			cancel()
-		}
-
 		log.Println("error")
 		return fmt.Errorf("error (%d)", i)
 	}
 
-	b := WithContext(NewConstantBackOff(time.Millisecond), ctx)
-	ticker := NewTicker(b)
+	b := WithContext(NewConstantBackOff(0), ctx)
+	ticker := NewTickerWithTimer(b, &testTimer{})
 
 	var err error
 	for range ticker.C {
@@ -83,15 +73,17 @@ func TestTickerContext(t *testing.T) {
 			continue
 		}
 
+		ticker.Stop()
 		break
 	}
+	// Ticker is guaranteed to tick at least once.
 	if err == nil {
 		t.Errorf("error is unexpectedly nil")
 	}
-	if err.Error() != "error (3)" {
-		t.Errorf("unexpected error: %s", err.Error())
+	if err.Error() != "error (1)" {
+		t.Errorf("unexpected error: %s", err)
 	}
-	if i != cancelOn {
+	if i != 1 {
 		t.Errorf("invalid number of retries: %d", i)
 	}
 }
