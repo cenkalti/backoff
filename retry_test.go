@@ -27,18 +27,18 @@ func (t *testTimer) C() <-chan time.Time {
 	return t.timer.C
 }
 
-type CustomErr struct {
+type customErr struct {
 	Code string
 }
 
-func (c *CustomErr) Error() string {
+func (c *customErr) Error() string {
 	return c.Code
 }
 
 func TestRetry(t *testing.T) {
 	const successOn = 3
 	var i = 0
-	var e *CustomErr
+	var e *customErr
 	// This function is successful on "successOn" calls.
 	f := func() error {
 		i++
