@@ -87,3 +87,10 @@ func TestTickerContext(t *testing.T) {
 		t.Errorf("invalid number of retries: %d", i)
 	}
 }
+
+func TestTickerDefaultTimer(t *testing.T) {
+	b := NewExponentialBackOff()
+	ticker := NewTickerWithTimer(b, nil)
+	// ensure a timer was actually assigned, instead of remaining as nil.
+	<-ticker.C
+}
