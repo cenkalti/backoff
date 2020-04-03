@@ -108,7 +108,7 @@ func TestBackOffOverflow(t *testing.T) {
 	exp.Reset()
 
 	exp.NextBackOff()
-	// Assert that when an overflow is possible the current varerval   time.Duration    is set to the max varerval   time.Duration   .
+	// Assert that when an overflow is possible, the current varerval time.Duration is set to the max varerval time.Duration.
 	assertEquals(t, testMaxInterval, exp.currentInterval)
 }
 
