@@ -88,7 +88,7 @@ func TestRetryContext(t *testing.T) {
 	}
 }
 
-func TestRetryPermenent(t *testing.T) {
+func TestRetryPermanent(t *testing.T) {
 	const permanentOn = 3
 	var i = 0
 
@@ -112,5 +112,20 @@ func TestRetryPermenent(t *testing.T) {
 	}
 	if i != permanentOn {
 		t.Errorf("invalid number of retries: %d", i)
+	}
+}
+
+func TestPermanent(t *testing.T) {
+	want := errors.New("foo")
+	var err error = Permanent(want)
+
+	got := errors.Unwrap(err)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+	err = Permanent(nil)
+	if err != nil {
+		t.Errorf("got %v, want nil", err)
 	}
 }
