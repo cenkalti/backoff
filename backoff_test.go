@@ -29,6 +29,16 @@ func TestStopBackOff(t *testing.T) {
 	}
 }
 
+func TestZeroBackOff(t *testing.T) {
+	backoff := &ZeroBackOff{}
+
+	backoffCpy := backoff.NewBackOff()
+	_, ok := backoffCpy.(*ZeroBackOff)
+	if !ok {
+		t.Error("wrong type from NewBackOff")
+	}
+}
+
 func TestConstantBackOff(t *testing.T) {
 	backoff := NewConstantBackOff(time.Second)
 	if backoff.NextBackOff() != time.Second {
