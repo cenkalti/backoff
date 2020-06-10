@@ -133,7 +133,6 @@ func TestNewBackOff(t *testing.T) {
 	exp.Multiplier = testMultiplier
 	exp.MaxInterval = testMaxInterval
 	exp.MaxElapsedTime = testMaxElapsedTime
-	exp.Reset()
 
 	expCpy := exp.NewBackOff()
 	exp2, ok := expCpy.(*ExponentialBackOff)

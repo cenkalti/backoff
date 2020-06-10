@@ -19,6 +19,16 @@ func subtestNextBackOff(t *testing.T, expectedValue time.Duration, backOffPolicy
 	}
 }
 
+func TestStopBackOff(t *testing.T) {
+	backoff := &StopBackOff{}
+
+	backoffCpy := backoff.NewBackOff()
+	_, ok := backoffCpy.(*StopBackOff)
+	if !ok {
+		t.Error("wrong type from NewBackOff")
+	}
+}
+
 func TestConstantBackOff(t *testing.T) {
 	backoff := NewConstantBackOff(time.Second)
 	if backoff.NextBackOff() != time.Second {
@@ -31,7 +41,9 @@ func TestConstantBackOff(t *testing.T) {
 		t.Error("wrong type from NewBackOff")
 	}
 
-	if constant.Interval != backoff.Interval {
-		t.Error("invalid interval")
+	if constant == backoff {
+		t.Error("returned backoff is the same as original")
 	}
+
+	assertEquals(t, backoff.Interval, constant.Interval)
 }
