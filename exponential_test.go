@@ -117,3 +117,35 @@ func assertEquals(t *testing.T, expected, value time.Duration) {
 		t.Errorf("got: %d, expected: %d", value, expected)
 	}
 }
+
+func TestNewBackOff(t *testing.T) {
+	var (
+		testInitialInterval     = 500 * time.Millisecond
+		testRandomizationFactor = 0.1
+		testMultiplier          = 2.0
+		testMaxInterval         = 5 * time.Second
+		testMaxElapsedTime      = 15 * time.Minute
+	)
+
+	exp := NewExponentialBackOff()
+	exp.InitialInterval = testInitialInterval
+	exp.RandomizationFactor = testRandomizationFactor
+	exp.Multiplier = testMultiplier
+	exp.MaxInterval = testMaxInterval
+	exp.MaxElapsedTime = testMaxElapsedTime
+	exp.Reset()
+
+	expCpy := exp.NewBackOff()
+	exp2, ok := expCpy.(*ExponentialBackOff)
+	if !ok {
+		t.Error("wrong type from NewBackoff")
+	}
+
+	if exp2 == exp {
+		t.Error("returned backoff is the same as original")
+	}
+
+	if *exp2 != *exp {
+		t.Error("backoff copy was not equal to base backoff")
+	}
+}

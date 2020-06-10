@@ -24,4 +24,14 @@ func TestConstantBackOff(t *testing.T) {
 	if backoff.NextBackOff() != time.Second {
 		t.Error("invalid interval")
 	}
+
+	backoffCpy := backoff.NewBackOff()
+	constant, ok := backoffCpy.(*ConstantBackOff)
+	if !ok {
+		t.Error("wrong type from NewBackOff")
+	}
+
+	if constant.Interval != backoff.Interval {
+		t.Error("invalid interval")
+	}
 }

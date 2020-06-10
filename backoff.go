@@ -43,6 +43,11 @@ func (b *ZeroBackOff) Reset() {}
 
 func (b *ZeroBackOff) NextBackOff() time.Duration { return 0 }
 
+func (b *ZeroBackOff) NewBackOff() BackOff {
+	copy := *b
+	return &copy
+}
+
 // StopBackOff is a fixed backoff policy that always returns backoff.Stop for
 // NextBackOff(), meaning that the operation should never be retried.
 type StopBackOff struct{}
@@ -50,6 +55,11 @@ type StopBackOff struct{}
 func (b *StopBackOff) Reset() {}
 
 func (b *StopBackOff) NextBackOff() time.Duration { return Stop }
+
+func (b *StopBackOff) NewBackOff() BackOff {
+	copy := *b
+	return &copy
+}
 
 // ConstantBackOff is a backoff policy that always returns the same backoff delay.
 // This is in contrast to an exponential backoff policy,
@@ -60,6 +70,10 @@ type ConstantBackOff struct {
 
 func (b *ConstantBackOff) Reset()                     {}
 func (b *ConstantBackOff) NextBackOff() time.Duration { return b.Interval }
+func (b *ConstantBackOff) NewBackOff() BackOff {
+	copy := *b
+	return &copy
+}
 
 func NewConstantBackOff(d time.Duration) *ConstantBackOff {
 	return &ConstantBackOff{Interval: d}
