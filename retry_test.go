@@ -117,11 +117,26 @@ func TestRetryPermanent(t *testing.T) {
 
 func TestPermanent(t *testing.T) {
 	want := errors.New("foo")
+	other := errors.New("bar")
 	var err error = Permanent(want)
 
 	got := errors.Unwrap(err)
 	if got != want {
 		t.Errorf("got %v, want %v", got, want)
+	}
+
+	if is := errors.Is(err, want); !is {
+		t.Errorf("err: %v is not %v", err, want)
+	}
+
+	if is := errors.Is(err, other); is {
+		t.Errorf("err: %v is %v", err, other)
+	}
+
+	wrapped := fmt.Errorf("wrapped: %w", err)
+	var permanent *PermanentError
+	if !errors.As(wrapped, &permanent) {
+		t.Errorf("errors.As(%v, %v)", wrapped, permanent)
 	}
 
 	err = Permanent(nil)
