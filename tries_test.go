@@ -55,7 +55,7 @@ func TestMaxTriesZero(t *testing.T) {
 	}, b)
 
 	if err == nil {
-		t.Errorf("error expected, nil founc")
+		t.Errorf("error expected, nil found")
 	}
 	if called != 1 {
 		t.Errorf("operation is called %d times", called)
