@@ -81,7 +81,7 @@ func TestRetryContext(t *testing.T) {
 	if err == nil {
 		t.Errorf("error is unexpectedly nil")
 	}
-	if err.Error() != "error (3)" {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf("unexpected error: %s", err.Error())
 	}
 	if i != cancelOn {
