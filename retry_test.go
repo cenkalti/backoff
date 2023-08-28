@@ -55,6 +55,36 @@ func TestRetry(t *testing.T) {
 	}
 }
 
+func TestRetryWithData(t *testing.T) {
+	const successOn = 3
+	var i = 0
+
+	// This function is successful on "successOn" calls.
+	f := func() (int, error) {
+		i++
+		log.Printf("function is called %d. time\n", i)
+
+		if i == successOn {
+			log.Println("OK")
+			return 42, nil
+		}
+
+		log.Println("error")
+		return 1, errors.New("error")
+	}
+
+	res, err := RetryNotifyWithTimerAndData(f, NewExponentialBackOff(), nil, &testTimer{})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if i != successOn {
+		t.Errorf("invalid number of retries: %d", i)
+	}
+	if res != 42 {
+		t.Errorf("invalid data in response: %d, expected 42", res)
+	}
+}
+
 func TestRetryContext(t *testing.T) {
 	var cancelOn = 3
 	var i = 0
@@ -81,7 +111,7 @@ func TestRetryContext(t *testing.T) {
 	if err == nil {
 		t.Errorf("error is unexpectedly nil")
 	}
-	if err.Error() != "error (3)" {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf("unexpected error: %s", err.Error())
 	}
 	if i != cancelOn {
@@ -90,15 +120,15 @@ func TestRetryContext(t *testing.T) {
 }
 
 func TestRetryPermanent(t *testing.T) {
-	ensureRetries := func(test string, shouldRetry bool, f func() error) {
+	ensureRetries := func(test string, shouldRetry bool, f func() (int, error), expectRes int) {
 		numRetries := -1
 		maxRetries := 1
 
-		_ = RetryNotifyWithTimer(
-			func() error {
+		res, _ := RetryNotifyWithTimerAndData(
+			func() (int, error) {
 				numRetries++
 				if numRetries >= maxRetries {
-					return Permanent(errors.New("forced"))
+					return -1, Permanent(errors.New("forced"))
 				}
 				return f()
 			},
@@ -114,43 +144,52 @@ func TestRetryPermanent(t *testing.T) {
 		if !shouldRetry && numRetries > 0 {
 			t.Errorf("Test: '%s', backoff should not have retried", test)
 		}
+
+		if res != expectRes {
+			t.Errorf("Test: '%s', got res %d but expected %d", test, res, expectRes)
+		}
 	}
 
 	for _, testCase := range []struct {
 		name        string
-		f           func() error
+		f           func() (int, error)
 		shouldRetry bool
+		res         int
 	}{
 		{
 			"nil test",
-			func() error {
-				return nil
+			func() (int, error) {
+				return 1, nil
 			},
 			false,
+			1,
 		},
 		{
 			"io.EOF",
-			func() error {
-				return io.EOF
+			func() (int, error) {
+				return 2, io.EOF
 			},
 			true,
+			-1,
 		},
 		{
 			"Permanent(io.EOF)",
-			func() error {
-				return Permanent(io.EOF)
+			func() (int, error) {
+				return 3, Permanent(io.EOF)
 			},
 			false,
+			3,
 		},
 		{
 			"Wrapped: Permanent(io.EOF)",
-			func() error {
-				return fmt.Errorf("Wrapped error: %w", Permanent(io.EOF))
+			func() (int, error) {
+				return 4, fmt.Errorf("Wrapped error: %w", Permanent(io.EOF))
 			},
 			false,
+			4,
 		},
 	} {
-		ensureRetries(testCase.name, testCase.shouldRetry, testCase.f)
+		ensureRetries(testCase.name, testCase.shouldRetry, testCase.f, testCase.res)
 	}
 }
 
