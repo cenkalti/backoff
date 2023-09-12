@@ -117,3 +117,45 @@ func assertEquals(t *testing.T, expected, value time.Duration) {
 		t.Errorf("got: %d, expected: %d", value, expected)
 	}
 }
+
+func TestNewExponentialBackOff(t *testing.T) {
+	// Create a new ExponentialBackOff with custom options
+	backOff := NewExponentialBackOff(
+		WithInitialInterval(1*time.Second),
+		WithMultiplier(2.0),
+		WithMaxInterval(10*time.Second),
+		WithMaxElapsedTime(30*time.Second),
+		WithRetryStopDuration(0),
+		WithClockProvider(SystemClock),
+	)
+
+	// Check that the backOff object is not nil
+	if backOff == nil {
+		t.Error("Expected a non-nil ExponentialBackOff object, got nil")
+	}
+
+	// Check that the custom options were applied correctly
+	if backOff.InitialInterval != 1*time.Second {
+		t.Errorf("Expected InitialInterval to be 1 second, got %v", backOff.InitialInterval)
+	}
+
+	if backOff.Multiplier != 2.0 {
+		t.Errorf("Expected Multiplier to be 2.0, got %v", backOff.Multiplier)
+	}
+
+	if backOff.MaxInterval != 10*time.Second {
+		t.Errorf("Expected MaxInterval to be 10 seconds, got %v", backOff.MaxInterval)
+	}
+
+	if backOff.MaxElapsedTime != 30*time.Second {
+		t.Errorf("Expected MaxElapsedTime to be 30 seconds, got %v", backOff.MaxElapsedTime)
+	}
+
+	if backOff.Stop != 0 {
+		t.Errorf("Expected Stop to be 0 (no stop), got %v", backOff.Stop)
+	}
+
+	if backOff.Clock != SystemClock {
+		t.Errorf("Expected Clock to be SystemClock, got %v", backOff.Clock)
+	}
+}
