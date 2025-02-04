@@ -101,7 +101,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		}
 
 		// Stop retrying if context is cancelled.
-		if cerr := ctx.Err(); cerr != nil {
+		if cerr := context.Cause(ctx); cerr != nil {
 			return res, cerr
 		}
 
@@ -133,7 +133,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		select {
 		case <-args.Timer.C():
 		case <-ctx.Done():
-			return res, ctx.Err()
+			return res, context.Cause(ctx)
 		}
 	}
 }

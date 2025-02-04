@@ -89,8 +89,10 @@ func TestRetryContext(t *testing.T) {
 	var cancelOn = 3
 	var i = 0
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(context.Canceled)
+
+	expectedErr := errors.New("custom error")
 
 	// This function cancels context on "cancelOn" calls.
 	f := func() (bool, error) {
@@ -100,7 +102,7 @@ func TestRetryContext(t *testing.T) {
 		// cancelling the context in the operation function is not a typical
 		// use-case, however it allows to get predictable test results.
 		if i == cancelOn {
-			cancel()
+			cancel(expectedErr)
 		}
 
 		log.Println("error")
@@ -111,7 +113,7 @@ func TestRetryContext(t *testing.T) {
 	if err == nil {
 		t.Errorf("error is unexpectedly nil")
 	}
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, expectedErr) {
 		t.Errorf("unexpected error: %s", err.Error())
 	}
 	if i != cancelOn {
