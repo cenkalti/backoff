@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync"
 	"testing"
 	"time"
 )
@@ -222,5 +223,79 @@ func TestPermanent(t *testing.T) {
 	err = Permanent(nil)
 	if err != nil {
 		t.Errorf("got %v, want nil", err)
+	}
+}
+
+func TestBackoffReset(t *testing.T) {
+	const successOn = 3
+	var i = 0
+
+	// This function is successful on "successOn" calls.
+	f := func() (bool, error) {
+		i++
+		if i == successOn {
+			return true, nil
+		}
+		return false, errors.New("error")
+	}
+
+	regularStart := time.Now()
+	_, err := Retry(context.Background(), f, WithBackOff(NewExponentialBackOff()))
+	regularElapsed := time.Since(regularStart)
+
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if i != successOn {
+		t.Errorf("invalid number of retries: %d", i)
+	}
+
+	i = 0
+	resetChan := make(chan bool)
+	ctx, cancel := context.WithCancelCause(context.Background())
+	var wg sync.WaitGroup
+
+	backoffTestStart := time.Now()
+
+	wg.Add(1)
+	go func() {
+		_, err := Retry(context.Background(), f, WithBackOff(NewExponentialBackOff()), WithBackoffResetChannel(resetChan))
+		if err != nil {
+			t.Errorf("unexpected error: %s", err.Error())
+		}
+		if i != successOn {
+			t.Errorf("invalid number of retries: %d", i)
+		}
+		wg.Done()
+		cancel(context.Canceled)
+	}()
+
+	wg.Add(1)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				wg.Done()
+				return
+			default:
+				resetChan <- true
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
+
+	}()
+
+	wg.Wait()
+	close(resetChan)
+
+	backoffTestElapsed := time.Since(backoffTestStart)
+
+	diff := regularElapsed - backoffTestElapsed
+
+	thresholdPercentage := 90.0
+	percentageDiff := (float64(diff.Milliseconds()) / float64(regularElapsed.Milliseconds())) * 100
+
+	if percentageDiff < thresholdPercentage {
+		t.Errorf("The time difference (%.2f%%) is greater than the threshold (%.2f%%)\n", percentageDiff, thresholdPercentage)
 	}
 }

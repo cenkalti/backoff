@@ -17,11 +17,12 @@ type Notify func(error, time.Duration)
 
 // retryOptions holds configuration settings for the retry mechanism.
 type retryOptions struct {
-	BackOff        BackOff       // Strategy for calculating backoff periods.
-	Timer          timer         // Timer to manage retry delays.
-	Notify         Notify        // Optional function to notify on each retry error.
-	MaxTries       uint          // Maximum number of retry attempts.
-	MaxElapsedTime time.Duration // Maximum total time for all retries.
+	BackOff             BackOff       // Strategy for calculating backoff periods.
+	Timer               timer         // Timer to manage retry delays.
+	Notify              Notify        // Optional function to notify on each retry error.
+	MaxTries            uint          // Maximum number of retry attempts.
+	MaxElapsedTime      time.Duration // Maximum total time for all retries.
+	BackoffResetChannel chan bool     // Channel to reset the backoff mechanism.
 }
 
 type RetryOption func(*retryOptions)
@@ -61,6 +62,13 @@ func WithMaxElapsedTime(d time.Duration) RetryOption {
 	}
 }
 
+// WithBackoffResetChannel sets the channel to reset the backoff mechanism.
+func WithBackoffResetChannel(ch chan bool) RetryOption {
+	return func(args *retryOptions) {
+		args.BackoffResetChannel = ch
+	}
+}
+
 // Retry attempts the operation until success, a permanent error, or backoff completion.
 // It ensures the operation is executed at least once.
 //
@@ -68,9 +76,10 @@ func WithMaxElapsedTime(d time.Duration) RetryOption {
 func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOption) (T, error) {
 	// Initialize default retry options.
 	args := &retryOptions{
-		BackOff:        NewExponentialBackOff(),
-		Timer:          &defaultTimer{},
-		MaxElapsedTime: DefaultMaxElapsedTime,
+		BackOff:             NewExponentialBackOff(),
+		Timer:               &defaultTimer{},
+		MaxElapsedTime:      DefaultMaxElapsedTime,
+		BackoffResetChannel: make(chan bool),
 	}
 
 	// Apply user-provided options to the default settings.
@@ -134,6 +143,10 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		case <-args.Timer.C():
 		case <-ctx.Done():
 			return res, context.Cause(ctx)
+		case msg := <-args.BackoffResetChannel:
+			if msg {
+				args.BackOff.Reset()
+			}
 		}
 	}
 }
