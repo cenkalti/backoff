@@ -4,14 +4,13 @@ package backoff
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 	"time"
 )
 
 func TestMaxTriesHappy(t *testing.T) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	max := 17 + r.Intn(13)
+	max := 17 + rand.IntN(13)
 	bo := WithMaxRetries(&ZeroBackOff{}, uint64(max))
 
 	// Load up the tries count, but reset should clear the record

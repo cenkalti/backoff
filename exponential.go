@@ -1,7 +1,7 @@
 package backoff
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
