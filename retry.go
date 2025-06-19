@@ -136,7 +136,7 @@ func retryInternal(ctx context.Context, innerFunc func() (bool, error), opts ...
 
 		// Stop retrying if context is cancelled.
 		if cerr := context.Cause(ctx); cerr != nil {
-			return err
+			return cerr
 		}
 
 		// Calculate next backoff duration.
@@ -167,7 +167,7 @@ func retryInternal(ctx context.Context, innerFunc func() (bool, error), opts ...
 		select {
 		case <-args.Timer.C():
 		case <-ctx.Done():
-			return err
+			return context.Cause(ctx)
 		}
 	}
 }

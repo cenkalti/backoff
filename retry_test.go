@@ -55,6 +55,30 @@ func TestRetry(t *testing.T) {
 	}
 }
 
+func TestRetryNoResult(t *testing.T) {
+	const successOn = 3
+	var i = 0
+
+	// This function is successful on "successOn" calls.
+	f := func() error {
+		i++
+		log.Printf("function is called %d. time\n", i)
+
+		if i == successOn {
+			log.Println("OK")
+			return nil
+		}
+
+		log.Println("error")
+		return errors.New("error")
+	}
+
+	err := RetryNoResult(context.Background(), f, WithBackOff(NewExponentialBackOff()), withTimer(&testTimer{}))
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+}
+
 func TestRetryWithData(t *testing.T) {
 	const successOn = 3
 	var i = 0
