@@ -64,8 +64,43 @@ func WithMaxElapsedTime(d time.Duration) RetryOption {
 // Retry attempts the operation until success, a permanent error, or backoff completion.
 // It ensures the operation is executed at least once.
 //
-// Returns the operation result or error if retries are exhausted or context is cancelled.
+// Returns the operation result or error if retries are exhausted, context is cancelled, or the operation returns a permanent error.
 func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOption) (T, error) {
+	var res T
+	err := retryInternal(ctx, func() (bool, error) {
+		var err error
+
+		// Execute the operation.
+		res, err = operation()
+		if err == nil {
+			return true, nil
+		}
+
+		return false, err
+	}, opts...)
+
+	return res, err
+}
+
+// RetryNoResult attempts the operation until success, a permanent error, or backoff completion.
+// It ensures the operation is executed at least once.
+//
+// Returns an error if retries are exhausted, context is cancelled, or the operation returns a permanent error.
+func RetryNoResult(ctx context.Context, operation func() error, opts ...RetryOption) error {
+	err := retryInternal(ctx, func() (bool, error) {
+		// Execute the operation
+		err := operation()
+		if err == nil {
+			return true, nil
+		}
+
+		return false, err
+	}, opts...)
+
+	return err
+}
+
+func retryInternal(ctx context.Context, innerFunc func() (bool, error), opts ...RetryOption) error {
 	// Initialize default retry options.
 	args := &retryOptions{
 		BackOff:        NewExponentialBackOff(),
@@ -83,32 +118,31 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 	startedAt := time.Now()
 	args.BackOff.Reset()
 	for numTries := uint(1); ; numTries++ {
-		// Execute the operation.
-		res, err := operation()
-		if err == nil {
-			return res, nil
+		success, err := innerFunc()
+		if success {
+			return nil
 		}
 
 		// Stop retrying if maximum tries exceeded.
 		if args.MaxTries > 0 && numTries >= args.MaxTries {
-			return res, err
+			return err
 		}
 
 		// Handle permanent errors without retrying.
 		var permanent *PermanentError
 		if errors.As(err, &permanent) {
-			return res, err
+			return err
 		}
 
 		// Stop retrying if context is cancelled.
 		if cerr := context.Cause(ctx); cerr != nil {
-			return res, cerr
+			return err
 		}
 
 		// Calculate next backoff duration.
 		next := args.BackOff.NextBackOff()
 		if next == Stop {
-			return res, err
+			return err
 		}
 
 		// Reset backoff if RetryAfterError is encountered.
@@ -120,7 +154,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 
 		// Stop retrying if maximum elapsed time exceeded.
 		if args.MaxElapsedTime > 0 && time.Since(startedAt)+next > args.MaxElapsedTime {
-			return res, err
+			return err
 		}
 
 		// Notify on error if a notifier function is provided.
@@ -133,7 +167,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		select {
 		case <-args.Timer.C():
 		case <-ctx.Done():
-			return res, context.Cause(ctx)
+			return err
 		}
 	}
 }
