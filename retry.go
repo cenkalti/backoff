@@ -39,6 +39,24 @@ func Retry(o Operation, b BackOff) error {
 }
 
 // RetryWithData is like Retry but returns data in the response too.
+//
+//	b := backoff.NewConstantBackOff(time.Microsecond * 100)
+//	backoff.WithMaxRetries(b, 1000)
+//	data, err := backoff.RetryWithData(func() (string, error) {
+//		n := rand.Intn(100)
+//		fmt.Println(n)
+//		if n == 99 {
+//			return "bingo", nil
+//		} else {
+//			return "", errors.New("not bingo")
+//		}
+//	}, b)
+//
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	fmt.Println(data)
 func RetryWithData[T any](o OperationWithData[T], b BackOff) (T, error) {
 	return RetryNotifyWithData(o, b, nil)
 }
