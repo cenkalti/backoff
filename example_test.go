@@ -2,7 +2,11 @@ package backoff
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
+	"math/rand"
+	"time"
 )
 
 func ExampleRetry() {
@@ -68,4 +72,26 @@ func ExampleTicker() {
 	}
 
 	// Operation is successful.
+}
+
+func ExampleRetryWithData() {
+	b := NewConstantBackOff(time.Microsecond * 100)
+	WithMaxRetries(b, 1000)
+
+	// loop through to retry until success or max retries
+	data, err := RetryWithData(func() (string, error) {
+		n := rand.Intn(100)
+		fmt.Println(n)
+		if n == 99 {
+			return "bingo", nil
+		} else {
+			return "", errors.New("not bingo")
+		}
+	}, b)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(data)
 }
