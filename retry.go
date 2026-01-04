@@ -89,15 +89,15 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 			return res, nil
 		}
 
-		// Stop retrying if maximum tries exceeded.
-		if args.MaxTries > 0 && numTries >= args.MaxTries {
-			return res, err
-		}
-
 		// Handle permanent errors without retrying.
 		var permanent *PermanentError
 		if errors.As(err, &permanent) {
 			return res, permanent.Unwrap()
+		}
+
+		// Stop retrying if maximum tries exceeded.
+		if args.MaxTries > 0 && numTries >= args.MaxTries {
+			return res, err
 		}
 
 		// Stop retrying if context is cancelled.
