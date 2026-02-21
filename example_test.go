@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cenkalti/backoff/v5"
 )
@@ -52,6 +53,44 @@ func ExampleRetry() {
 
 	fmt.Println(result)
 	// Output: hello
+}
+
+func ExampleRetry_outcomes() {
+	operation := func() (string, error) {
+		resp, err := http.Get("http://httpbin.org/get")
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+		return "ok", nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := backoff.Retry(ctx, operation,
+		backoff.WithMaxElapsedTime(10*time.Second),
+		backoff.WithMaxTries(5),
+	)
+
+	switch {
+	case err == nil:
+		// Operation succeeded.
+		fmt.Println(result)
+
+	case errors.Is(err, context.Canceled):
+		// Context was cancelled by the caller.
+		fmt.Println("cancelled:", err)
+
+	case errors.Is(err, context.DeadlineExceeded):
+		// Either the context deadline or WithMaxElapsedTime was reached.
+		// err contains both the timeout signal and the last operation error.
+		fmt.Println("timed out:", err)
+
+	default:
+		// Retries exhausted (MaxTries or backoff stopped) or Permanent error.
+		fmt.Println("retries exhausted:", err)
+	}
 }
 
 func ExampleTicker() {

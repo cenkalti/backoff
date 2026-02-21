@@ -121,6 +121,50 @@ func TestRetryContext(t *testing.T) {
 	}
 }
 
+// https://github.com/cenkalti/backoff/issues/181
+func TestRetryContextErrorIncludesOperationError(t *testing.T) {
+	opErr := errors.New("operation error")
+	ctxErr := errors.New("context error")
+
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+
+	i := 0
+	f := func() (bool, error) {
+		i++
+		if i == 2 {
+			cancel(ctxErr)
+		}
+		return false, opErr
+	}
+
+	_, err := Retry(ctx, f, WithBackOff(NewConstantBackOff(time.Millisecond)), withTimer(&testTimer{}))
+	if !errors.Is(err, ctxErr) {
+		t.Errorf("context error not in result: %v", err)
+	}
+	if !errors.Is(err, opErr) {
+		t.Errorf("operation error not in result: %v", err)
+	}
+}
+
+// https://github.com/cenkalti/backoff/issues/181
+func TestRetryMaxElapsedTimeErrorIncludesOperationError(t *testing.T) {
+	opErr := errors.New("operation error")
+
+	_, err := Retry(
+		context.Background(),
+		func() (bool, error) { return false, opErr },
+		WithMaxElapsedTime(time.Millisecond),
+		withTimer(&testTimer{}),
+	)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("DeadlineExceeded not in result: %v", err)
+	}
+	if !errors.Is(err, opErr) {
+		t.Errorf("operation error not in result: %v", err)
+	}
+}
+
 func TestRetryPermanent(t *testing.T) {
 	ensureRetries := func(test string, shouldRetry bool, f func() (int, error), expectRes int) {
 		numRetries := -1
