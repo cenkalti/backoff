@@ -102,7 +102,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 
 		// Stop retrying if context is cancelled.
 		if cerr := context.Cause(ctx); cerr != nil {
-			return res, errors.Join(cerr, err)
+			return res, cerr
 		}
 
 		// Calculate next backoff duration.
@@ -120,7 +120,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 
 		// Stop retrying if maximum elapsed time exceeded.
 		if args.MaxElapsedTime > 0 && time.Since(startedAt)+next > args.MaxElapsedTime {
-			return res, errors.Join(context.DeadlineExceeded, err)
+			return res, err
 		}
 
 		// Notify on error if a notifier function is provided.
@@ -133,7 +133,7 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		select {
 		case <-args.Timer.C():
 		case <-ctx.Done():
-			return res, errors.Join(context.Cause(ctx), err)
+			return res, context.Cause(ctx)
 		}
 	}
 }
