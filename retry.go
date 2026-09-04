@@ -148,9 +148,21 @@ func (e *PermanentError) Unwrap() error {
 	return e.Err
 }
 
+// Is reports whether target is the same *PermanentError instance as e or one
+// of its wrapped errors. The previous implementation returned true for any
+// *PermanentError target, which made errors.Is treat every PermanentError as
+// equal to every other. Callers wrapping distinct sentinel errors with
+// Permanent(...) could no longer distinguish them with errors.Is.
+//
+// Identity is preserved here so callers can still detect "is this a
+// permanent error" with errors.As and inspect Err, while errors.Is only
+// matches the same instance. See issue #186.
 func (e *PermanentError) Is(target error) bool {
-	_, ok := target.(*PermanentError)
-	return ok
+	t, ok := target.(*PermanentError)
+	if !ok {
+		return false
+	}
+	return e == t
 }
 
 // Permanent wraps the given err in a *PermanentError.

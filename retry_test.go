@@ -222,3 +222,50 @@ func TestPermanent(t *testing.T) {
 		t.Errorf("got %v, want nil", err)
 	}
 }
+
+// TestPermanentIsByIdentity guards against the regression described in
+// issue #186: PermanentError.Is previously returned true for any
+// *PermanentError target, which made errors.Is(Permanent(A), Permanent(B))
+// incorrectly report a match. Two distinct wrapped sentinels must remain
+// distinguishable.
+func TestPermanentIsByIdentity(t *testing.T) {
+	sentinelA := errors.New("sentinel A")
+	sentinelB := errors.New("sentinel B")
+
+	permA := Permanent(sentinelA)
+	permB := Permanent(sentinelB)
+
+	// Two calls to Permanent with the same wrapped error must produce
+	// distinct *PermanentError instances, so errors.Is must not equate them.
+	permA2 := Permanent(sentinelA)
+	if errors.Is(permA, permA2) {
+		t.Errorf("errors.Is(permA, permA2): different *PermanentError instances wrapping the same error must not match")
+	}
+
+	// Different wrapped errors must never match.
+	if errors.Is(permA, permB) {
+		t.Errorf("errors.Is(Permanent(A), Permanent(B)): distinct wrapped errors matched (issue #186)")
+	}
+	if errors.Is(permB, permA) {
+		t.Errorf("errors.Is(Permanent(B), Permanent(A)): distinct wrapped errors matched (issue #186)")
+	}
+
+	// Identity must still match itself.
+	if !errors.Is(permA, permA) {
+		t.Errorf("errors.Is(permA, permA): identity must match itself")
+	}
+
+	// A *PermanentError target that lives in the wrapped chain still matches
+	// via errors.Is's identity check (errors.Is walks Unwrap and reaches permA
+	// itself in the chain).
+	wrappedA := fmt.Errorf("wrap: %w", permA)
+	if !errors.Is(wrappedA, permA) {
+		t.Errorf("errors.Is(wrapped(permA), permA): permA must be reachable via Unwrap")
+	}
+
+	// But the unrelated permB is not reachable from permA's chain, so it
+	// must not match wrapped(permA).
+	if errors.Is(wrappedA, permB) {
+		t.Errorf("errors.Is(wrapped(permA), permB): permB is not in wrappedA's chain")
+	}
+}
