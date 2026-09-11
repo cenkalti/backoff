@@ -22,11 +22,12 @@ type Notify func(error, time.Duration)
 
 // retryOptions holds configuration settings for the retry mechanism.
 type retryOptions struct {
-	BackOff        BackOff       // Strategy for calculating backoff periods.
-	Timer          timer         // Timer to manage retry delays.
-	Notify         Notify        // Optional function called before each backoff wait.
-	MaxTries       uint          // Maximum number of retry attempts.
-	MaxElapsedTime time.Duration // Maximum total time for all retries.
+	BackOff                         BackOff       // Strategy for calculating backoff periods.
+	Timer                           timer         // Timer to manage retry delays.
+	Notify                          Notify        // Optional function called before each backoff wait.
+	MaxTries                        uint          // Maximum number of retry attempts.
+	MaxElapsedTime                  time.Duration // Maximum total time for all retries, from Retry call.
+	MaxElapsedTimeSinceFirstFailure time.Duration // Maximum time from first failure; 0 disables.
 }
 
 // RetryOption configures the behavior of Retry.
@@ -69,8 +70,10 @@ func WithMaxTries(n uint) RetryOption {
 }
 
 // WithMaxElapsedTime limits the total wall-clock time spent retrying, measured
-// from when Retry is called. When the limit is reached, Retry returns a
-// *RetryError with Cause ErrMaxElapsedTime.
+// from when Retry is called (including the runtime of attempts themselves).
+// Long-running operations that can outlive this window before they fail need
+// their own bound, or WithMaxElapsedTimeSinceFirstFailure. When the limit is
+// reached, Retry returns a *RetryError with Cause ErrMaxElapsedTime.
 //
 // The limit is checked only between attempts: it gates whether another attempt
 // is scheduled. It does not interrupt an operation that is already running, nor
@@ -88,6 +91,22 @@ func WithMaxTries(n uint) RetryOption {
 func WithMaxElapsedTime(d time.Duration) RetryOption {
 	return func(args *retryOptions) {
 		args.MaxElapsedTime = d
+	}
+}
+
+// WithMaxElapsedTimeSinceFirstFailure limits wall-clock time spent retrying,
+// measured from the first failed attempt rather than from when Retry is called.
+// Use this when attempts can legitimately run longer than the retry window
+// (long polls, blocking receives) and you still want retries after the first
+// failure. When the limit is reached, Retry returns a *RetryError with Cause
+// ErrMaxElapsedTime.
+//
+// Like WithMaxElapsedTime, the limit is checked only between attempts. Pass 0
+// (the default) to disable. It may be combined with WithMaxElapsedTime; both
+// limits are checked independently when set.
+func WithMaxElapsedTimeSinceFirstFailure(d time.Duration) RetryOption {
+	return func(args *retryOptions) {
+		args.MaxElapsedTimeSinceFirstFailure = d
 	}
 }
 
@@ -121,12 +140,17 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 	defer args.Timer.Stop()
 
 	startedAt := time.Now()
+	var firstFailureAt time.Time
 	args.BackOff.Reset()
 	for numTries := uint(1); ; numTries++ {
 		// Execute the operation.
 		res, err := operation()
 		if err == nil {
 			return res, nil
+		}
+
+		if firstFailureAt.IsZero() {
+			firstFailureAt = time.Now()
 		}
 
 		// Stop immediately on a permanent error; surface it as a RetryError.
@@ -169,6 +193,9 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 
 		// Stop retrying if maximum elapsed time exceeded.
 		if args.MaxElapsedTime > 0 && time.Since(startedAt)+next > args.MaxElapsedTime {
+			return res, &RetryError{LastErr: lastErr, Cause: ErrMaxElapsedTime}
+		}
+		if args.MaxElapsedTimeSinceFirstFailure > 0 && time.Since(firstFailureAt)+next > args.MaxElapsedTimeSinceFirstFailure {
 			return res, &RetryError{LastErr: lastErr, Cause: ErrMaxElapsedTime}
 		}
 
