@@ -588,3 +588,53 @@ func TestRetryErrorString(t *testing.T) {
 		t.Error("AsRetryError(nil) should be nil")
 	}
 }
+
+func TestRetryMaxElapsedTimeSinceFirstFailure(t *testing.T) {
+	// First attempt blocks past WithMaxElapsedTime; with the call-time window
+	// alone Retry would stop without a second try. Measuring from the first
+	// failure lets the short retry succeed.
+	attempts := 0
+	res, err := Retry(context.Background(), func() (string, error) {
+		attempts++
+		if attempts == 1 {
+			time.Sleep(50 * time.Millisecond)
+			return "", errors.New("connection lost")
+		}
+		return "ok", nil
+	},
+		WithMaxElapsedTime(0),
+		WithMaxElapsedTimeSinceFirstFailure(time.Second),
+		WithBackOff(NewConstantBackOff(time.Millisecond)),
+		withTimer(&testTimer{}),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res != "ok" {
+		t.Fatalf("got %q, want ok", res)
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts=%d, want 2", attempts)
+	}
+}
+
+func TestRetryMaxElapsedTimeIncludesAttemptRuntime(t *testing.T) {
+	// Call-time window still includes attempt runtime: a first attempt that
+	// outlives the window is not retried.
+	attempts := 0
+	_, err := Retry(context.Background(), func() (string, error) {
+		attempts++
+		time.Sleep(30 * time.Millisecond)
+		return "", errors.New("connection lost")
+	},
+		WithMaxElapsedTime(10*time.Millisecond),
+		WithBackOff(NewConstantBackOff(time.Millisecond)),
+		withTimer(&testTimer{}),
+	)
+	if !errors.Is(err, ErrMaxElapsedTime) {
+		t.Fatalf("want ErrMaxElapsedTime, got %v", err)
+	}
+	if attempts != 1 {
+		t.Fatalf("attempts=%d, want 1", attempts)
+	}
+}
