@@ -588,3 +588,30 @@ func TestRetryErrorString(t *testing.T) {
 		t.Error("AsRetryError(nil) should be nil")
 	}
 }
+
+func TestRetryElapsedTimeOverflow(t *testing.T) {
+	operationErr := errors.New("retry me")
+	for _, retryAfter := range []bool{false, true} {
+		t.Run(fmt.Sprint(retryAfter), func(t *testing.T) {
+			calls := 0
+			tm := &spyTimer{}
+			_, err := Retry(context.Background(), func() (int, error) {
+				calls++
+				if calls > 1 {
+					return 1, nil
+				}
+				if retryAfter {
+					return 0, &RetryAfterError{Duration: time.Duration(1<<63 - 1)}
+				}
+				return 0, operationErr
+			}, WithBackOff(NewConstantBackOff(time.Duration(1<<63-1))),
+				WithMaxElapsedTime(time.Second), withTimer(tm))
+			if !errors.Is(err, ErrMaxElapsedTime) {
+				t.Fatalf("error = %v, want ErrMaxElapsedTime", err)
+			}
+			if calls != 1 || len(tm.starts) != 0 {
+				t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+			}
+		})
+	}
+}
