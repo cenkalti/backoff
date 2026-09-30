@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"testing"
 	"time"
 )
@@ -590,9 +591,18 @@ func TestRetryErrorString(t *testing.T) {
 }
 
 func TestRetryElapsedTimeOverflow(t *testing.T) {
+	const maxDuration time.Duration = math.MaxInt64
 	operationErr := errors.New("retry me")
-	for _, retryAfter := range []bool{false, true} {
-		t.Run(fmt.Sprint(retryAfter), func(t *testing.T) {
+	tests := []struct {
+		name    string
+		backOff BackOff
+		err     error
+	}{
+		{"backoff", NewConstantBackOff(maxDuration), operationErr},
+		{"retry-after", &ZeroBackOff{}, RetryAfter(maxDuration, operationErr)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
 			tm := &spyTimer{}
 			_, err := Retry(context.Background(), func() (int, error) {
@@ -600,18 +610,56 @@ func TestRetryElapsedTimeOverflow(t *testing.T) {
 				if calls > 1 {
 					return 1, nil
 				}
-				if retryAfter {
-					return 0, &RetryAfterError{Duration: time.Duration(1<<63 - 1)}
-				}
-				return 0, operationErr
-			}, WithBackOff(NewConstantBackOff(time.Duration(1<<63-1))),
-				WithMaxElapsedTime(time.Second), withTimer(tm))
+				time.Sleep(time.Millisecond) // Ensure elapsed time is non-zero.
+				return 0, tt.err
+			}, WithBackOff(tt.backOff), WithMaxElapsedTime(time.Second), withTimer(tm))
 			if !errors.Is(err, ErrMaxElapsedTime) {
 				t.Fatalf("error = %v, want ErrMaxElapsedTime", err)
+			}
+			if re := AsRetryError(err); re == nil || re.LastErr != operationErr {
+				t.Errorf("LastErr = %v, want %v", re, operationErr)
 			}
 			if calls != 1 || len(tm.starts) != 0 {
 				t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
 			}
 		})
+	}
+}
+
+func TestRetryAfterNegativeDuration(t *testing.T) {
+	// A negative delay must not extend the elapsed-time budget.
+	calls := 0
+	tm := &spyTimer{}
+	_, err := Retry(context.Background(), func() (int, error) {
+		calls++
+		if calls > 1 {
+			return 1, nil
+		}
+		time.Sleep(2 * time.Millisecond)
+		return 0, RetryAfter(-time.Hour, errors.New("rate limited"))
+	}, WithMaxElapsedTime(time.Millisecond), withTimer(tm))
+	if !errors.Is(err, ErrMaxElapsedTime) {
+		t.Fatalf("error = %v, want ErrMaxElapsedTime", err)
+	}
+	if calls != 1 || len(tm.starts) != 0 {
+		t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+	}
+}
+
+func TestRetryAfterNegativeDurationWaitsZero(t *testing.T) {
+	calls := 0
+	tm := &spyTimer{}
+	_, err := Retry(context.Background(), func() (int, error) {
+		calls++
+		if calls > 1 {
+			return 1, nil
+		}
+		return 0, RetryAfter(Stop, errors.New("rate limited"))
+	}, withTimer(tm))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tm.starts) != 1 || tm.starts[0] != 0 {
+		t.Errorf("waits = %v, want a single wait of 0", tm.starts)
 	}
 }
