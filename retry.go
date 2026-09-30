@@ -155,16 +155,16 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 			return res, &RetryError{LastErr: lastErr, Cause: cerr}
 		}
 
-		// Calculate next backoff duration.
+		// Calculate next backoff duration. A RetryAfterError's delay overrides
+		// the policy (and Reset) even when NextBackOff returns Stop; otherwise
+		// a server-requested wait is dropped exactly when the policy has
+		// independently exhausted (issue 192).
 		next := args.BackOff.NextBackOff()
-		if next == Stop {
-			return res, &RetryError{LastErr: lastErr, Cause: ErrExhausted}
-		}
-
-		// Reset backoff if a RetryAfterError requested a specific delay.
 		if retryAfter != nil {
 			next = retryAfter.Duration
 			args.BackOff.Reset()
+		} else if next == Stop {
+			return res, &RetryError{LastErr: lastErr, Cause: ErrExhausted}
 		}
 
 		// Stop retrying if maximum elapsed time exceeded.

@@ -380,6 +380,12 @@ func (t *spyTimer) Stop() {
 func (t *spyTimer) C() <-chan time.Time { return t.timer.C }
 
 // countingBackOff records how many times it is reset and queried.
+type stopBackOff struct{ resets int }
+
+func (b *stopBackOff) Reset() { b.resets++ }
+
+func (b *stopBackOff) NextBackOff() time.Duration { return Stop }
+
 type countingBackOff struct{ resets, nexts int }
 
 func (b *countingBackOff) Reset() { b.resets++ }
@@ -503,6 +509,41 @@ func TestRetryAfter(t *testing.T) {
 		t.Errorf("timer waits = %v, want a single wait of %v", tm.starts, retryAfter)
 	}
 	// Reset is called once at the start of Retry and again because of RetryAfter.
+	if bo.resets != 2 {
+		t.Errorf("BackOff.Reset called %d times, want 2 (initial + RetryAfter)", bo.resets)
+	}
+}
+
+func TestRetryAfterWhenBackOffStop(t *testing.T) {
+	// RetryAfter must still schedule another attempt when the backoff policy
+	// returns Stop (docs: wait + Reset are unconditional).
+	const retryAfter = 42 * time.Second
+	bo := &stopBackOff{}
+	tm := &spyTimer{}
+	calls := 0
+
+	_, err := Retry(context.Background(),
+		func() (int, error) {
+			calls++
+			if calls == 1 {
+				return 0, RetryAfter(retryAfter, errors.New("rate limited"))
+			}
+			return 1, nil
+		},
+		WithBackOff(bo),
+		WithMaxElapsedTime(0),
+		withTimer(tm),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if calls != 2 {
+		t.Fatalf("calls = %d, want 2", calls)
+	}
+	if len(tm.starts) != 1 || tm.starts[0] != retryAfter {
+		t.Errorf("timer waits = %v, want a single wait of %v", tm.starts, retryAfter)
+	}
+	// Reset at start of Retry, then again because of RetryAfter.
 	if bo.resets != 2 {
 		t.Errorf("BackOff.Reset called %d times, want 2 (initial + RetryAfter)", bo.resets)
 	}
