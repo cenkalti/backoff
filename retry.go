@@ -77,6 +77,12 @@ func WithMaxTries(n uint) RetryOption {
 // a backoff wait already in progress, and Retry stops early rather than
 // starting a backoff that would overrun the limit.
 //
+// The elapsed time includes the runtime of the attempts themselves, not only
+// the waits between them. An operation that runs longer than the limit before
+// it fails (a long poll or a blocking receive, for example) is therefore not
+// retried at all. Such operations need a bound of their own, such as a
+// BackOff that returns Stop once failures have lasted too long.
+//
 // This differs from bounding Retry with a context deadline (e.g.
 // context.WithTimeout): a context deadline is reactive — it interrupts the
 // backoff wait and, if the operation observes the context, can abort an

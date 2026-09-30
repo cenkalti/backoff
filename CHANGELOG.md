@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExponentialBackOff` no longer returns a negative delay when a randomized interval exceeds the maximum `time.Duration`.
 - `Retry` no longer panics when the operation returns a typed-nil `*RetryAfterError`. It is retried like any other error.
 - The `RetryAfterError` docs now state that the backoff policy's `Stop` takes precedence over the requested delay. (#192)
+- The `WithMaxElapsedTime` docs now state that the limit includes the runtime of the attempts, so an operation that fails after running past it is not retried. (#188)
 
 ## [7.0.0] - 2026-06-30
 
