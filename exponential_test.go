@@ -68,6 +68,20 @@ func TestBackOffOverflow(t *testing.T) {
 	assertEquals(t, testMaxInterval, exp.currentInterval)
 }
 
+func TestBackOffRandomizedOverflow(t *testing.T) {
+	exp := NewExponentialBackOff()
+	exp.InitialInterval = math.MaxInt64
+	exp.MaxInterval = math.MaxInt64
+	exp.RandomizationFactor = 0.5
+	exp.Reset()
+
+	for range 100 {
+		if next := exp.NextBackOff(); next < 0 {
+			t.Fatalf("NextBackOff() = %d, want non-negative", next)
+		}
+	}
+}
+
 func assertEquals(t *testing.T, expected, value time.Duration) {
 	if expected != value {
 		t.Errorf("got: %d, expected: %d", value, expected)

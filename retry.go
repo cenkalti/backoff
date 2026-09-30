@@ -167,6 +167,12 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 			args.BackOff.Reset()
 		}
 
+		// A negative delay (e.g. a Retry-After date already in the past) means retry now.
+		// Clamp it so it cannot stretch the elapsed-time budget.
+		if next < 0 {
+			next = 0
+		}
+
 		// Stop retrying if maximum elapsed time exceeded.
 		if args.MaxElapsedTime > 0 && next > args.MaxElapsedTime-time.Since(startedAt) {
 			return res, &RetryError{LastErr: lastErr, Cause: ErrMaxElapsedTime}

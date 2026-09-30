@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `WithMaxElapsedTime` no longer lets a delay near the maximum `time.Duration` overflow past the limit, and a negative `RetryAfter` delay is treated as zero instead of extending it. (#191)
+- `ExponentialBackOff` no longer returns a negative delay when a randomized interval exceeds the maximum `time.Duration`.
+
 ## [7.0.0] - 2026-06-30
 
 ### Changed
