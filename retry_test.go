@@ -509,6 +509,57 @@ func TestRetryAfter(t *testing.T) {
 	}
 }
 
+func TestRetryAfterPolicyStop(t *testing.T) {
+	// The policy's Stop wins over a RetryAfterError: no wait, no retry.
+	cause := errors.New("rate limited")
+	tm := &spyTimer{}
+	calls := 0
+
+	_, err := Retry(context.Background(),
+		func() (int, error) {
+			calls++
+			return 0, RetryAfter(time.Second, cause)
+		},
+		WithBackOff(&StopBackOff{}),
+		WithMaxElapsedTime(0),
+		withTimer(tm),
+	)
+	if !errors.Is(err, ErrExhausted) {
+		t.Fatalf("error = %v, want ErrExhausted", err)
+	}
+	if re := AsRetryError(err); re == nil || re.LastErr != cause {
+		t.Errorf("LastErr = %v, want %v", re, cause)
+	}
+	if calls != 1 || len(tm.starts) != 0 {
+		t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+	}
+}
+
+func TestRetryAfterTypedNil(t *testing.T) {
+	// A typed-nil *RetryAfterError is retried like a plain error, not a panic.
+	calls := 0
+	tm := &spyTimer{}
+
+	res, err := Retry(context.Background(),
+		func() (int, error) {
+			calls++
+			if calls > 1 {
+				return 1, nil
+			}
+			var rae *RetryAfterError
+			return 0, rae
+		},
+		WithBackOff(NewConstantBackOff(time.Second)),
+		withTimer(tm),
+	)
+	if err != nil || res != 1 {
+		t.Fatalf("Retry = (%d, %v), want (1, nil)", res, err)
+	}
+	if len(tm.starts) != 1 || tm.starts[0] != time.Second {
+		t.Errorf("timer waits = %v, want the policy's 1s", tm.starts)
+	}
+}
+
 func TestRetryAfterError(t *testing.T) {
 	// nil cause: behaves like a bare retry-after, Unwrap is nil.
 	err := RetryAfter(3*time.Second, nil)

@@ -139,9 +139,10 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 		// carries an underlying error, that is the meaningful error to report as
 		// LastErr should retrying stop (mirrors how a permanent error surfaces its
 		// inner error). errors.As matches it whether returned directly or wrapped.
+		// A typed-nil *RetryAfterError also matches; treat it as a plain error.
 		lastErr := err
 		var retryAfter *RetryAfterError
-		if errors.As(err, &retryAfter) && retryAfter.err != nil {
+		if errors.As(err, &retryAfter) && retryAfter != nil && retryAfter.err != nil {
 			lastErr = retryAfter.err
 		}
 
