@@ -714,3 +714,23 @@ func TestRetryAfterNegativeDurationWaitsZero(t *testing.T) {
 		t.Errorf("waits = %v, want a single wait of 0", tm.starts)
 	}
 }
+
+func TestNotifyCancellation(t *testing.T) {
+	for round := 0; round < 128; round++ {
+		ctx, cancel := context.WithCancel(context.Background())
+		calls := 0
+		_, err := Retry(ctx, func() (int, error) {
+			calls++
+			if calls > 1 {
+				return 42, nil
+			}
+			return 0, errors.New("transient")
+		}, WithBackOff(&ZeroBackOff{}),
+			WithMaxTries(2), WithMaxElapsedTime(0),
+			WithNotify(func(error, time.Duration) { cancel() }))
+		cancel()
+		if calls != 1 || !errors.Is(err, context.Canceled) {
+			t.Fatalf("round %d: calls=%d err=%v", round, calls, err)
+		}
+	}
+}
