@@ -714,3 +714,74 @@ func TestRetryAfterNegativeDurationWaitsZero(t *testing.T) {
 		t.Errorf("waits = %v, want a single wait of 0", tm.starts)
 	}
 }
+
+// stuckDoneContext reports cancellation through Err but never closes Done,
+// pinning the wait's select to the timer branch: the case where cancellation
+// and timer expiry are both ready and select picks the timer.
+type stuckDoneContext struct {
+	context.Context
+	cancelled bool
+}
+
+func (c *stuckDoneContext) Done() <-chan struct{} { return nil }
+
+func (c *stuckDoneContext) Err() error {
+	if c.cancelled {
+		return context.Canceled
+	}
+	return nil
+}
+
+// cancelOnStartTimer cancels ctx as the wait begins, then fires immediately.
+type cancelOnStartTimer struct {
+	spyTimer
+	ctx *stuckDoneContext
+}
+
+func (t *cancelOnStartTimer) Start(d time.Duration) {
+	t.ctx.cancelled = true
+	t.spyTimer.Start(d)
+}
+
+func TestRetryCancelledBeforeNextAttempt(t *testing.T) {
+	// The second attempt would succeed; cancellation must still win (#194).
+	newOp := func(calls *int) Operation[int] {
+		return func() (int, error) {
+			*calls++
+			if *calls > 1 {
+				return 42, nil
+			}
+			return 0, errors.New("transient")
+		}
+	}
+
+	t.Run("cancelled in Notify", func(t *testing.T) {
+		ctx := &stuckDoneContext{Context: context.Background()}
+		tm := &spyTimer{}
+		calls := 0
+		_, err := Retry(ctx, newOp(&calls),
+			WithBackOff(&ZeroBackOff{}), withTimer(tm),
+			WithNotify(func(error, time.Duration) { ctx.cancelled = true }),
+		)
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("err = %v, want context.Canceled", err)
+		}
+		if calls != 1 || len(tm.starts) != 0 {
+			t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+		}
+	})
+
+	t.Run("cancelled during the wait", func(t *testing.T) {
+		ctx := &stuckDoneContext{Context: context.Background()}
+		calls := 0
+		_, err := Retry(ctx, newOp(&calls),
+			WithBackOff(&ZeroBackOff{}), withTimer(&cancelOnStartTimer{ctx: ctx}),
+		)
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("err = %v, want context.Canceled", err)
+		}
+		if calls != 1 {
+			t.Errorf("calls = %d, want 1", calls)
+		}
+	})
+}
