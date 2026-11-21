@@ -78,10 +78,13 @@ func WithMaxTries(n uint) RetryOption {
 // starting a backoff that would overrun the limit.
 //
 // The elapsed time includes the runtime of the attempts themselves, not only
-// the waits between them. An operation that runs longer than the limit before
-// it fails (a long poll or a blocking receive, for example) is therefore not
-// retried at all. Such operations need a bound of their own, such as a
-// [BackOff] that returns [Stop] once failures have lasted too long.
+// the waits between them. Time spent in Notify counts as well: the budget is
+// re-checked after Notify runs, before the next wait starts.
+//
+// An operation that runs longer than the limit before it fails (a long poll
+// or a blocking receive, for example) is therefore not retried at all. Such
+// operations need a bound of their own, such as a [BackOff] that returns
+// [Stop] once failures have lasted too long.
 //
 // This differs from bounding [Retry] with a context deadline (e.g.
 // [context.WithTimeout]): a context deadline is reactive — it interrupts the
@@ -191,6 +194,12 @@ func Retry[T any](ctx context.Context, operation Operation[T], opts ...RetryOpti
 			if cerr := context.Cause(ctx); cerr != nil {
 				return res, &RetryError{LastErr: lastErr, Cause: cerr}
 			}
+		}
+
+		// Notify may have consumed the remaining elapsed-time budget; re-check
+		// it before starting a wait that would overrun the limit.
+		if args.MaxElapsedTime > 0 && next > args.MaxElapsedTime-time.Since(startedAt) {
+			return res, &RetryError{LastErr: lastErr, Cause: ErrMaxElapsedTime}
 		}
 
 		// Wait for the next backoff period or context cancellation.
