@@ -677,6 +677,80 @@ func TestRetryElapsedTimeOverflow(t *testing.T) {
 	}
 }
 
+// https://github.com/cenkalti/backoff/issues/200
+func TestRetryElapsedTimeRecheckedAfterNotify(t *testing.T) {
+	opErr := errors.New("temporary failure")
+	newOp := func(calls *int) Operation[int] {
+		return func() (int, error) {
+			*calls++
+			if *calls > 1 {
+				return 42, nil
+			}
+			return 0, opErr
+		}
+	}
+
+	t.Run("notify consumes the budget", func(t *testing.T) {
+		tm := &spyTimer{}
+		calls := 0
+		_, err := Retry(context.Background(), newOp(&calls),
+			WithBackOff(&ZeroBackOff{}),
+			WithMaxTries(2),
+			WithMaxElapsedTime(100*time.Millisecond),
+			WithNotify(func(error, time.Duration) { time.Sleep(150 * time.Millisecond) }),
+			withTimer(tm),
+		)
+		if !errors.Is(err, ErrMaxElapsedTime) {
+			t.Fatalf("error = %v, want ErrMaxElapsedTime", err)
+		}
+		if re := AsRetryError(err); re == nil || re.LastErr != opErr {
+			t.Errorf("LastErr = %v, want %v", re, opErr)
+		}
+		if calls != 1 || len(tm.starts) != 0 {
+			t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+		}
+	})
+
+	t.Run("delay fits before notify but not after", func(t *testing.T) {
+		tm := &spyTimer{}
+		calls := 0
+		_, err := Retry(context.Background(), newOp(&calls),
+			WithBackOff(NewConstantBackOff(50*time.Millisecond)),
+			WithMaxTries(2),
+			WithMaxElapsedTime(100*time.Millisecond),
+			WithNotify(func(error, time.Duration) { time.Sleep(80 * time.Millisecond) }),
+			withTimer(tm),
+		)
+		if !errors.Is(err, ErrMaxElapsedTime) {
+			t.Fatalf("error = %v, want ErrMaxElapsedTime", err)
+		}
+		if re := AsRetryError(err); re == nil || re.LastErr != opErr {
+			t.Errorf("LastErr = %v, want %v", re, opErr)
+		}
+		if calls != 1 || len(tm.starts) != 0 {
+			t.Errorf("calls = %d, waits = %v; want one call and no wait", calls, tm.starts)
+		}
+	})
+
+	t.Run("disabled limit ignores notify time", func(t *testing.T) {
+		tm := &spyTimer{}
+		calls := 0
+		_, err := Retry(context.Background(), newOp(&calls),
+			WithBackOff(&ZeroBackOff{}),
+			WithMaxTries(2),
+			WithMaxElapsedTime(0),
+			WithNotify(func(error, time.Duration) { time.Sleep(150 * time.Millisecond) }),
+			withTimer(tm),
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if calls != 2 || len(tm.starts) != 1 {
+			t.Errorf("calls = %d, waits = %v; want two calls and one wait", calls, tm.starts)
+		}
+	})
+}
+
 func TestRetryAfterNegativeDuration(t *testing.T) {
 	// A negative delay must not extend the elapsed-time budget.
 	calls := 0
